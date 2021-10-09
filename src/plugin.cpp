@@ -24,10 +24,22 @@
 
 Plugin* pluginInstance;
 
+// settings
+NVGcolor MIDI_LABEL_FG_COLOR = nvgRGB(0x33, 0x33, 0x33);
+NVGcolor MIDI_LABEL_BG_COLOR = nvgRGB(0xcc, 0xcc, 0xcc);
+
 void init(Plugin* p) {
 	pluginInstance = p;
     p->addModel(modelStereo_Meter);
     p->addModel(modelTest_Osc);
     p->addModel(modelQuad_Panner);
     p->addModel(modelQuad_Encoder);
+    p->addModel(modelMIDI_Monitor);
+    p->addModel(modelMIDI_Repeater);
+    p->addModel(modelMIDI_Merger);
+    p->addModel(modelMIDI_Mapper);
+    p->addModel(modelMIDI_Input);
+    p->addModel(modelMIDI_Output);
+    p->addModel(modelMIDI_CV);
+    p->addModel(modelMIDI_Channel);
 }
