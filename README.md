@@ -121,119 +121,53 @@ The connections and controls are as follows:
 <br clear="right"/>
 
 ----
-### MIDI Input
-**Hardare MIDI Input**
+### MIDI Channel
+**MIDI Channel Filter / Splitter / Transposer**
 
-<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Input.png" />
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Channel.png" />
 
-The MIDI Input module allows you to bring in MIDI from any hardware device to use within
-VCV Rack by way of Kilpatrick Audio's **vMIDI&trade;** protocol for patchable
-MIDI. Bring in a keyboard or other controller to use with other MIDI modules in this plugin.
-
-<br clear="right"/>
-
-----
-### MIDI Output
-**Hardware MIDI Output**
-
-<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Output.png" />
-
-The MIDI Output module allows you to send MIDI from VCV Rack to any hardware device by way of
-Kilpatrick Audio's **vMIDI&trade;** protocol for patchable MIDI. Control an external synth
-or sequencer with MIDI that you generate from within VCV Rack.
+The MIDI Channel module allows the channel of MIDI events to be remapped. A key split mode allows notes to be sent to two
+different outputs depending on the note played. This can be used to split a regular MIDI keyboard into two different parts.
+Finally a transpose function allows the outputs to be transposed up or down.
 
 **Features:**
 
-- Single Hardware MIDI Output
-- MIDI input jack accepts **vMIDI&trade;** patchable MIDI for use with included modules
+- MIDI channel filter allows omni or single channel input remapped to a single output channel
+- MIDI key split function filters note messages onto two different outputs with configurable split point
+- MIDI transpose will adjust notes up or down before they are output
+- Key split function can be turned on and off without resetting the split setting
+- All jacks uses the **vMIDI&trade;** patchable MIDI protocol
 
-<br clear="right"/>
+**Input and Output Jacks**
 
-----
-### MIDI Monitor
-**MIDI Monitor Display**
+MIDI is input on the MIDI IN jack. This can accept any kind of MIDI message and route it to one of the two output jacks. The MIDI
+OUT jacks are labeled **L** and **R** indicating the hand they will output when using key split mode. By default all messages
+come out of the **R** hand jack.
 
-<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Monitor.png" />
+**Setting the IN and OUT Channels**
 
-The MIDI Monitor module allows you to check the data on a MIDI stream. It displays the raw MIDI data in
-three-byte messages just as they appear on the **vMIDI&trade;** cables within VCV Rack. Up to four inputs
-can be monitored at the same time and the input number will be shown on the display. Inputs can be switched
-on and off allowing quick checking of different streams of data.
+To set the IN channel hover your mouse over the IN CHAN display and scroll up and down to set the channel. A setting of **ALL** will
+accept all channels as input, whereas as setting of **CH 01** through **CH 16** will only accept that specific channel.
 
-**Features:**
+To set the OUT channel, scroll over the OUT CHAN display. Only a single channel can be output at a time.
 
-- MIDI Monitor shows raw MIDI message data
-- Four input channels with individual on/off controls
-- All jacks use the **vMIDI&trade;** patchable MIDI protocol
+**Using Key Split Mode**
 
-<br clear="right"/>
+To use key split, hover and scroll over the KEY SPLIT display to change the split point. To enable and disable key split on the fly
+simply double click the display to toggle it on and off. When key split is enabled, low notes will come out of the **L** jack and
+high notes will come out of the **R** jack.
 
-----
-### MIDI Mapper
-**MIDI CC Mapper**
+**Using the Transpose Function**
 
-The MIDI Mapper allows CC messages to be remapped. If you have a control on a keyboard or Virtue controller
-and wish to transform it into another CC message needed by a synthesizer, simply pass the signal through the CC mapper
-and map the CC to a different number. Up to six mappings can be performed at once. Daisy-chain multiple mappers together
-if you require additional mappings. All map settings are stored within the VCV Rack patch.
-
-To enable mapping simply click on the display corresponding to the mapper you wish to use. Turn or press the
-control to learn the CC input number. Then use the scroll wheel on your mouse to adjust the output CC number up or down.
-The MIDI Mapper does not care about MIDI channels and will map CCs found on any channel.
-
-**Features:**
-
-- MIDI CC mapper with auto-learning function
-- Six mappers can be used at the same time
-- All jacks use the **vMIDI&trade;** patchable MIDI protocol
-
-<br clear="right"/>
-
-----
-### MIDI Merger
-**MIDI Stream Merger**
-
-If you have multiple MIDI streams and wish to create a single stream combining them together simply use the MIDI Merger
-to merge up to three streams together. The output is also filtered to allow convenient access to channel mode messages,
-system messages and all messages on three dedicated jacks. SYSEX messages are currently not processed.
-
-**Features:**
-
-- Three input MIDI merger can merge three streams of MIDI together
-- Filtered outputs send Channel mode messages, System messages and All messages
-- All jacks use the **vMIDI&trade;** patchable MIDI protocol
-
-<br clear="right"/>
-
-----
-### MIDI Repeater
-**MIDI Repeat Processor**
-
-The MIDI Repeater is a unique module used to manage CC messages from some types of controls such
-as knobs and sliders. By default Virtue control modules send knobs and sliders repeatedly. This enables
-receivers to instantly know the front panel setting without having to touch all the controls. However in some situations
-this might not be what you want. You can use the MIDI Repeater to filter out repeated CC messages with the same
-value as the last time. Additionally you can generate repeated CC messages from devices that do not support sending
-the same values over and over. This can be helpful when patching MIDI on the fly as the receiving module or device
-will be updated with the current values right away. The MIDI Repeater ignores channel numbers and treats all CC
-messages globally.
-
-There are three modes you can use with the MIDI Repeater:
-
-- **OFF** - Filter out any repeated CC messages with the same CC and value
-- **ON** - Allow repeated CC messages with the same CC and value
-- **OFF** - Generate repeated CC messages from a non-repeating source
-
-**Features:**
-
-- Processor for managing CC messages from knobs and sliders
-- All jacks use the **vMIDI&trade;** patchable MIDI protocol
+To transpose the outputs up or down simply hover and scroll over the TRANS display. Transpose is processed after the key split.
 
 <br clear="right"/>
 
 ----
 ### MIDI CV
 **MIDI to CV Converter**
+
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_CV.png" />
 
 The MIDI CV module allows either note or CC to CV conversion. In note mode either mono or polyphonic
 notes can be converted. In the case of mono mode, last-note priority is used. In poly mode up to three
@@ -275,43 +209,119 @@ will be saved as part of your patch.
 <br clear="right"/>
 
 ----
-### MIDI Channel
-**MIDI Channel Filter / Splitter / Transposer**
+### MIDI Input
+**Hardare MIDI Input**
 
-The MIDI Channel module allows the channel of MIDI events to be remapped. A key split mode allows notes to be sent to two
-different outputs depending on the note played. This can be used to split a regular MIDI keyboard into two different parts.
-Finally a transpose function allows the outputs to be transposed up or down.
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Input.png" />
+
+The MIDI Input module allows you to bring in MIDI from any hardware device to use within
+VCV Rack by way of Kilpatrick Audio's **vMIDI&trade;** protocol for patchable
+MIDI. Bring in a keyboard or other controller to use with other MIDI modules in this plugin.
+
+<br clear="right"/>
+
+----
+### MIDI Mapper
+**MIDI CC Mapper**
+
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Mapper.png" />
+
+The MIDI Mapper allows CC messages to be remapped. If you have a control on a keyboard or Virtue controller
+and wish to transform it into another CC message needed by a synthesizer, simply pass the signal through the CC mapper
+and map the CC to a different number. Up to six mappings can be performed at once. Daisy-chain multiple mappers together
+if you require additional mappings. All map settings are stored within the VCV Rack patch.
+
+To enable mapping simply click on the display corresponding to the mapper you wish to use. Turn or press the
+control to learn the CC input number. Then use the scroll wheel on your mouse to adjust the output CC number up or down.
+The MIDI Mapper does not care about MIDI channels and will map CCs found on any channel.
 
 **Features:**
 
-- MIDI channel filter allows omni or single channel input remapped to a single output channel
-- MIDI key split function filters note messages onto two different outputs with configurable split point
-- MIDI transpose will adjust notes up or down before they are output
-- Key split function can be turned on and off without resetting the split setting
-- All jacks uses the **vMIDI&trade;** patchable MIDI protocol
+- MIDI CC mapper with auto-learning function
+- Six mappers can be used at the same time
+- All jacks use the **vMIDI&trade;** patchable MIDI protocol
 
-**Input and Output Jacks**
+<br clear="right"/>
 
-MIDI is input on the MIDI IN jack. This can accept any kind of MIDI message and route it to one of the two output jacks. The MIDI
-OUT jacks are labeled **L** and **R** indicating the hand they will output when using key split mode. By default all messages
-come out of the **R** hand jack.
+----
+### MIDI Merger
+**MIDI Stream Merger**
 
-**Setting the IN and OUT Channels**
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Merger.png" />
 
-To set the IN channel hover your mouse over the IN CHAN display and scroll up and down to set the channel. A setting of **ALL** will
-accept all channels as input, whereas as setting of **CH 01** through **CH 16** will only accept that specific channel.
+If you have multiple MIDI streams and wish to create a single stream combining them together simply use the MIDI Merger
+to merge up to three streams together. The output is also filtered to allow convenient access to channel mode messages,
+system messages and all messages on three dedicated jacks. SYSEX messages are currently not processed.
 
-To set the OUT channel, scroll over the OUT CHAN display. Only a single channel can be output at a time.
+**Features:**
 
-**Using Key Split Mode**
+- Three input MIDI merger can merge three streams of MIDI together
+- Filtered outputs send Channel mode messages, System messages and All messages
+- All jacks use the **vMIDI&trade;** patchable MIDI protocol
 
-To use key split, hover and scroll over the KEY SPLIT display to change the split point. To enable and disable key split on the fly
-simply double click the display to toggle it on and off. When key split is enabled, low notes will come out of the **L** jack and
-high notes will come out of the **R** jack.
+<br clear="right"/>
 
-**Using the Transpose Function**
+----
+### MIDI Monitor
+**MIDI Monitor Display**
 
-To transpose the outputs up or down simply hover and scroll over the TRANS display. Transpose is processed after the key split.
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Monitor.png" />
+
+The MIDI Monitor module allows you to check the data on a MIDI stream. It displays the raw MIDI data in
+three-byte messages just as they appear on the **vMIDI&trade;** cables within VCV Rack. Up to four inputs
+can be monitored at the same time and the input number will be shown on the display. Inputs can be switched
+on and off allowing quick checking of different streams of data.
+
+**Features:**
+
+- MIDI Monitor shows raw MIDI message data
+- Four input channels with individual on/off controls
+- All jacks use the **vMIDI&trade;** patchable MIDI protocol
+
+<br clear="right"/>
+
+----
+### MIDI Output
+**Hardware MIDI Output**
+
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Output.png" />
+
+The MIDI Output module allows you to send MIDI from VCV Rack to any hardware device by way of
+Kilpatrick Audio's **vMIDI&trade;** protocol for patchable MIDI. Control an external synth
+or sequencer with MIDI that you generate from within VCV Rack.
+
+**Features:**
+
+- Single Hardware MIDI Output
+- MIDI input jack accepts **vMIDI&trade;** patchable MIDI for use with included modules
+
+<br clear="right"/>
+
+----
+### MIDI Repeater
+**MIDI Repeat Processor**
+
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Repeater.png" />
+
+The MIDI Repeater is a unique module used to manage CC messages from some types of controls such
+as knobs and sliders. By default Virtue control modules send knobs and sliders repeatedly. This enables
+receivers to instantly know the front panel setting without having to touch all the controls. However in some situations
+this might not be what you want. You can use the MIDI Repeater to filter out repeated CC messages with the same
+value as the last time. Additionally you can generate repeated CC messages from devices that do not support sending
+the same values over and over. This can be helpful when patching MIDI on the fly as the receiving module or device
+will be updated with the current values right away. The MIDI Repeater ignores channel numbers and treats all CC
+messages globally.
+
+There are three modes you can use with the MIDI Repeater:
+
+- **OFF** - Filter out any repeated CC messages with the same CC and value
+- **ON** - Allow repeated CC messages with the same CC and value
+- **OFF** - Generate repeated CC messages from a non-repeating source
+
+**Features:**
+
+- Processor for managing CC messages from knobs and sliders
+- All jacks use the **vMIDI&trade;** patchable MIDI protocol
 
 <br clear="right"/>
 
