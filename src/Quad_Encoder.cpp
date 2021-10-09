@@ -237,20 +237,23 @@ struct Quad_Encoder : Module {
         slShifter.process(sl, &slDel, &slShift);
         srShifter.process(sr, &srDel, &srShift);
 
-        outputs[LT_OUT].setVoltage(
-            ((flDel * ltFlMix) +
+        tempf = ((flDel * ltFlMix) +
             (frDel * ltFrMix) +
             (slDel * ltSlMix) +
             (slShift * ltSlShiftMix) +
             (srDel * ltSrMix) +
-            (srShift * ltSrShiftMix)) * AUDIO_OUT_GAIN * params[OUTPUT_POT].getValue());
-        outputs[RT_OUT].setVoltage(
-            ((flDel * rtFlMix) +
+            (srShift * ltSrShiftMix)) * AUDIO_OUT_GAIN * params[OUTPUT_POT].getValue();
+        outputs[LT_OUT].setVoltage(tempf);
+        peakMeterLtOut.update(tempf);
+
+        tempf = ((flDel * rtFlMix) +
             (frDel * rtFrMix) +
             (slDel * rtSlMix) +
             (slShift * rtSlShiftMix) +
             (srDel * rtSrMix) +
-            (srShift * rtSrShiftMix)) * AUDIO_OUT_GAIN * params[OUTPUT_POT].getValue());
+            (srShift * rtSrShiftMix)) * AUDIO_OUT_GAIN * params[OUTPUT_POT].getValue();
+        outputs[RT_OUT].setVoltage(tempf);
+        peakMeterRtOut.update(tempf);
 	}
 
     // samplerate changed

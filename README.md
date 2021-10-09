@@ -24,32 +24,15 @@ logos are copyright Kilpatrick Audio and may not be redistributed without permis
 
 <img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/Stereo_Meter.png" />
 
-The Stereo Meter is a useful tool especially for development. I often wanted to test signals and read out
+The Stereo Meter is a useful tool especially for development. I often want to test signals and read out
 exact dB values. The module is a peak reading meter with 0.0dBFS normalized to 10Vpk. (20Vpp) There is a two-pole
 high-pass filter set at 10Hz to strip out DC which can ruin the measurement of small signals.
 
-<pre>
+You can adjust the displayed value and set it to a reference level of your choice. Scroll the mouse wheel over
+the left or right meter to adjust the reference level up or down. The adjustment will show for a moment before reverting
+back to the actual level display. The text will show in red when the reference level has been set to a non-0dB value.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</pre>
+<br clear="right"/>
 
 ----
 ### Test Osc
@@ -73,6 +56,8 @@ The functions and controls are as follows:
 
 Note that the *REF* level displayed is a convenience feature. You can scroll your middle mouse button over the display to adjust it relative to the ABS value.
 
+<br clear="right"/>
+
 ----
 ### Quad Panner
 **Quad Panner with CV Control**
@@ -83,6 +68,10 @@ The Quad Panner is a mono input quadraphonic panner that uses a fake on-screen j
 of X and Y CV inputs. The panning uses a quasi-constant power law whereby the middle position will be 3dB down in each
 direction. For instance, full front and centre will be 3dB down in front left and front right outputs. The centre stick
 position will be 6dB down in all four channels. This is unlike the basic pan pot law of 6dB down.
+
+You can snap to preset positions such as top left, top centre, top right, etc. (indicated with blue arrows) by holding down
+P and clicking around the edge of the joystick circuit. This is particularly useful for alignment to make sure that you are
+fully deflected in one direction or another.
 
 The connections and controls are as follows:
 
@@ -100,8 +89,31 @@ The connections and controls are as follows:
   - **4** = SR
 - **RESET** - resets the stick to the centre position
 
+<br clear="right"/>
+
 ----
 ### Quad Encoder
 **Quad 4-2-4 Matrix Encoder**
 
 <img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/Quad_Encoder.png" />
+
+The Quad Encoder can perform matrix encoding of 4-2-4 matrix quad systems. Several popular / classic quad formats are supported
+including QS (Regular Matrix) and SQ. The QS format seems identical to the encoding performed by the QUARK quadraphonic plugin.
+
+To change the matrix mode right click and select the mode in the menu.
+
+The connections and controls are as follows:
+
+- **OUTPUT** - matrix output level control
+- **FL** - front left input
+- **FR** - front right input
+- **SL** - surround left input
+- **SR** - surround right input
+- **MULTI INS** - polyphonic cable inputs carrying four channels:
+  - **1** = FL
+  - **2** = FR
+  - **3** = SL
+  - **4** = SR
+- **MATRIX OUT** - LT (Left Total) and RT (Right Total) matrix outputs
+
+<br clear="right"/>
