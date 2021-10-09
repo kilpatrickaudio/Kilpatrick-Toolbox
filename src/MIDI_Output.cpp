@@ -109,9 +109,9 @@ struct MIDI_OutputWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 114.5)), module, MIDI_Output::MIDI_IN));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 108.5)), module, MIDI_Output::MIDI_IN));
 
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 108.15)), module, MIDI_Output::MIDI_IN_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 102.15)), module, MIDI_Output::MIDI_IN_LED));
 
         // labels
         float labelW = 0.700;

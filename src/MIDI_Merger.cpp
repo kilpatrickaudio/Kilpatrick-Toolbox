@@ -138,18 +138,18 @@ struct MIDI_MergerWidget : ModuleWidget {
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 48.5)), module, MIDI_Merger::MIDI_IN3));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 60.5)), module, MIDI_Merger::MIDI_IN4));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 90.5)), module, MIDI_Merger::MIDI_OUT1));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 102.5)), module, MIDI_Merger::MIDI_OUT2));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 114.5)), module, MIDI_Merger::MIDI_OUT3));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 84.5)), module, MIDI_Merger::MIDI_OUT1));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 96.5)), module, MIDI_Merger::MIDI_OUT2));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 108.5)), module, MIDI_Merger::MIDI_OUT3));
 
         addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 18.15)), module, MIDI_Merger::MIDI_IN1_LED));
         addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 30.15)), module, MIDI_Merger::MIDI_IN2_LED));
         addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 42.15)), module, MIDI_Merger::MIDI_IN3_LED));
         addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 54.15)), module, MIDI_Merger::MIDI_IN4_LED));
 
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 84.15)), module, MIDI_Merger::MIDI_OUT1_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 96.15)), module, MIDI_Merger::MIDI_OUT2_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 108.15)), module, MIDI_Merger::MIDI_OUT3_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 78.15)), module, MIDI_Merger::MIDI_OUT1_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 90.15)), module, MIDI_Merger::MIDI_OUT2_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 102.15)), module, MIDI_Merger::MIDI_OUT3_LED));
 	}
 };
 

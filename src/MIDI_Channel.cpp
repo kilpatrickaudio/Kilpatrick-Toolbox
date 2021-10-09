@@ -289,14 +289,14 @@ struct MIDI_ChannelWidget : ModuleWidget {
         textField->handler = (KilpatrickLabelHandler*)module;
 		addChild(textField);
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 82.5)), module, MIDI_Channel::MIDI_IN));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 76.5)), module, MIDI_Channel::MIDI_IN));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 98.5)), module, MIDI_Channel::MIDI_OUT_L));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 114.5)), module, MIDI_Channel::MIDI_OUT_R));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 92.5)), module, MIDI_Channel::MIDI_OUT_L));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 108.5)), module, MIDI_Channel::MIDI_OUT_R));
 
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 76.15)), module, MIDI_Channel::MIDI_IN_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 92.15)), module, MIDI_Channel::MIDI_OUT_L_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 108.15)), module, MIDI_Channel::MIDI_OUT_R_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 70.15)), module, MIDI_Channel::MIDI_IN_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 86.15)), module, MIDI_Channel::MIDI_OUT_L_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 102.15)), module, MIDI_Channel::MIDI_OUT_R_LED));
 	}
 };
 

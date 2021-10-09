@@ -379,20 +379,20 @@ struct MIDI_CVWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-		addParam(createParamCentered<KilpatrickD6RRedButton>(mm2px(Vec(10.16, 40.5)), module, MIDI_CV::LEARN_SW));
-		addParam(createParamCentered<KilpatrickToggle3P>(mm2px(Vec(10.16, 57)), module, MIDI_CV::POLY_SW));
-		addParam(createParamCentered<KilpatrickToggle3P>(mm2px(Vec(10.16, 73)), module, MIDI_CV::MODE_SW));
+		addParam(createParamCentered<KilpatrickD6RRedButton>(mm2px(Vec(10.16, 36.5)), module, MIDI_CV::LEARN_SW));
+		addParam(createParamCentered<KilpatrickToggle3P>(mm2px(Vec(10.16, 52)), module, MIDI_CV::POLY_SW));
+		addParam(createParamCentered<KilpatrickToggle3P>(mm2px(Vec(10.16, 68)), module, MIDI_CV::MODE_SW));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 24.5)), module, MIDI_CV::MIDI_IN));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 22.5)), module, MIDI_CV::MIDI_IN));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 90.5)), module, MIDI_CV::P1_OUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 102.5)), module, MIDI_CV::G2_OUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 114.5)), module, MIDI_CV::V3_OUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 84.5)), module, MIDI_CV::P1_OUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 96.5)), module, MIDI_CV::G2_OUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 108.5)), module, MIDI_CV::V3_OUT));
 
         addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 18.15)), module, MIDI_CV::MIDI_IN_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 84.15)), module, MIDI_CV::P1_OUT_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 96.15)), module, MIDI_CV::G2_OUT_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 108.15)), module, MIDI_CV::V3_OUT_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 78.15)), module, MIDI_CV::P1_OUT_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 90.15)), module, MIDI_CV::G2_OUT_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 102.15)), module, MIDI_CV::V3_OUT_LED));
 	}
 
     // add menu items to select which memory slot we use

@@ -284,12 +284,12 @@ struct MIDI_MapperWidget : ModuleWidget {
         textField->handler = (KilpatrickLabelHandler*)module;
 		addChild(textField);
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 98.5)), module, MIDI_Mapper::MIDI_IN));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(10.16, 96.5)), module, MIDI_Mapper::MIDI_IN));
 
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 114.5)), module, MIDI_Mapper::MIDI_OUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 108.5)), module, MIDI_Mapper::MIDI_OUT));
 
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 92.15)), module, MIDI_Mapper::MIDI_IN_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 108.15)), module, MIDI_Mapper::MIDI_OUT_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 90.15)), module, MIDI_Mapper::MIDI_IN_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 102.15)), module, MIDI_Mapper::MIDI_OUT_LED));
 
 	}
 };

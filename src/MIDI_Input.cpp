@@ -136,13 +136,13 @@ struct MIDI_InputWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 90.5)), module, MIDI_Input::MIDI_OUT1));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 102.5)), module, MIDI_Input::MIDI_OUT2));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 114.5)), module, MIDI_Input::MIDI_OUT3));
+        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 84.5)), module, MIDI_Input::MIDI_OUT1));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 96.5)), module, MIDI_Input::MIDI_OUT2));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(10.16, 108.5)), module, MIDI_Input::MIDI_OUT3));
 
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 84.15)), module, MIDI_Input::MIDI_OUT1_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 96.15)), module, MIDI_Input::MIDI_OUT2_LED));
-        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 108.15)), module, MIDI_Input::MIDI_OUT3_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 78.15)), module, MIDI_Input::MIDI_OUT1_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 90.15)), module, MIDI_Input::MIDI_OUT2_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 102.15)), module, MIDI_Input::MIDI_OUT3_LED));
 
         // labels
         float labelW = 0.700;

@@ -196,39 +196,39 @@ struct MIDI_MonitorWidget : ModuleWidget {
         textField->handler = (KilpatrickLabelHandler*)module;
 		addChild(textField);
 
-		ParamWidget *p = createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(28.32, 66.5)), module, MIDI_Monitor::MIDI_IN1_SW);
+		ParamWidget *p = createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(28.32, 60.5)), module, MIDI_Monitor::MIDI_IN1_SW);
         ((KilpatrickButton *)p)->momentary = false;
         ((KilpatrickButton *)p)->latchColor = nvgRGBA(0, 0, 0, 0);
         addParam(p);
 
-        p = createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(28.32, 82.5)), module, MIDI_Monitor::MIDI_IN2_SW);
+        p = createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(28.32, 76.5)), module, MIDI_Monitor::MIDI_IN2_SW);
         ((KilpatrickButton *)p)->momentary = false;
         ((KilpatrickButton *)p)->latchColor = nvgRGBA(0, 0, 0, 0);
         addParam(p);
 
-        p = createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(28.32, 98.5)), module, MIDI_Monitor::MIDI_IN3_SW);
+        p = createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(28.32, 92.5)), module, MIDI_Monitor::MIDI_IN3_SW);
         ((KilpatrickButton *)p)->momentary = false;
         ((KilpatrickButton *)p)->latchColor = nvgRGBA(0, 0, 0, 0);
         addParam(p);
 
-		p = createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(28.32, 114.5)), module, MIDI_Monitor::MIDI_IN4_SW);
+		p = createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(28.32, 108.5)), module, MIDI_Monitor::MIDI_IN4_SW);
         ((KilpatrickButton *)p)->momentary = false;
         ((KilpatrickButton *)p)->latchColor = nvgRGBA(0, 0, 0, 0);
         addParam(p);
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(12.32, 66.5)), module, MIDI_Monitor::MIDI_IN1));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(12.32, 82.5)), module, MIDI_Monitor::MIDI_IN2));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(12.32, 98.5)), module, MIDI_Monitor::MIDI_IN3));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(12.32, 114.5)), module, MIDI_Monitor::MIDI_IN4));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(12.32, 60.5)), module, MIDI_Monitor::MIDI_IN1));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(12.32, 76.5)), module, MIDI_Monitor::MIDI_IN2));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(12.32, 92.5)), module, MIDI_Monitor::MIDI_IN3));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(12.32, 108.5)), module, MIDI_Monitor::MIDI_IN4));
 
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.499, 60.5)), module, MIDI_Monitor::MIDI_IN1_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(22.499, 60.5)), module, MIDI_Monitor::MIDI_IN1_SW_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.499, 76.5)), module, MIDI_Monitor::MIDI_IN2_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(22.499, 76.5)), module, MIDI_Monitor::MIDI_IN2_SW_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.499, 92.5)), module, MIDI_Monitor::MIDI_IN3_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(22.499, 92.5)), module, MIDI_Monitor::MIDI_IN3_SW_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.499, 108.5)), module, MIDI_Monitor::MIDI_IN4_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(22.499, 108.5)), module, MIDI_Monitor::MIDI_IN4_SW_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.499, 54.5)), module, MIDI_Monitor::MIDI_IN1_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(22.499, 54.5)), module, MIDI_Monitor::MIDI_IN1_SW_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.499, 70.5)), module, MIDI_Monitor::MIDI_IN2_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(22.499, 70.5)), module, MIDI_Monitor::MIDI_IN2_SW_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.499, 86.5)), module, MIDI_Monitor::MIDI_IN3_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(22.499, 86.5)), module, MIDI_Monitor::MIDI_IN3_SW_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(6.499, 102.5)), module, MIDI_Monitor::MIDI_IN4_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(22.499, 102.5)), module, MIDI_Monitor::MIDI_IN4_SW_LED));
 	}
 };
 
