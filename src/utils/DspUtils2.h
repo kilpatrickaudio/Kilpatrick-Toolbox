@@ -1,8 +1,8 @@
 /*
  * Kilpatrick Audio DSP Utils 2 - C++ Functions
  *
- * Copyright 2020: Kilpatrick Audio
  * Written by: Andrew Kilpatrick
+ * Copyright 2020: Kilpatrick Audio
  *
  * Please see the license file included with this repo for license details.
  *

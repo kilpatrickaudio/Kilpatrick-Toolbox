@@ -1,8 +1,23 @@
 /*
  * MIDI Channel - vMIDI Channel Splitter
  *
- * Copyright 2021: Kilpatrick Audio
  * Written by: Andrew Kilpatrick
+ * Copyright 2021: Kilpatrick Audio
+ *
+ * This file is part of Kilpatrick-Toolbox.
+ *
+ * Kilpatrick-Toolbox is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Kilpatrick-Toolbox is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Kilpatrick-Toolbox.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
 #include "plugin.hpp"
@@ -184,9 +199,9 @@ struct MIDI_Channel : Module, KilpatrickLabelHandler {
     }
 
     // handle button on the label
-    void onButton(int id, const event::Button& e) override {
+    int onLabelButton(int id, const event::Button& e) override {
         if(e.action != GLFW_PRESS) {
-            return;
+            return 0;
         }
         // toggle key split mode
         if(doubleClickPulser.timeout && id == 2) {
@@ -199,10 +214,11 @@ struct MIDI_Channel : Module, KilpatrickLabelHandler {
             resetOutputNotes = 1;  // force reset
         }
         doubleClickPulser.timeout = DOUBLE_CLICK_TIMEOUT;
+        return 1;
     }
 
     // handle scroll on the label
-    void onHoverScroll(int id, const event::HoverScroll& e) override {
+    int onLabelHoverScroll(int id, const event::HoverScroll& e) override {
         int change = 1;
         if(e.scrollDelta.y < 0.0) {
             change = -1;

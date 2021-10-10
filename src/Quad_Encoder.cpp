@@ -70,8 +70,8 @@ struct Quad_Encoder : Module {
     dsp2::Levelmeter peakMeterSrIn;
     dsp2::Levelmeter peakMeterLtOut;
     dsp2::Levelmeter peakMeterRtOut;
-    dsp2::Levelmeter peakMeterMultAIn;
-    dsp2::Levelmeter peakMeterMultBIn;
+    dsp2::Levelmeter peakMeterMultiAIn;
+    dsp2::Levelmeter peakMeterMultiBIn;
     // matrix mixing
     enum Encoders {
         QS_ENCODE,
@@ -89,7 +89,7 @@ struct Quad_Encoder : Module {
 
 	Quad_Encoder() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configParam(OUTPUT_POT, 0.f, 1.f, 0.5f, "OUTPUT");
+		configParam(OUTPUT_POT, 0.f, 1.f, 0.5f, "OUTPUT LEVEL");
         configParam(MODE, 0.f, NUM_ENCODERS - 1, 0.0f, "MODE");
 		configInput(FL_IN, "FL IN");
 		configInput(FR_IN, "FR IN");
@@ -115,8 +115,8 @@ struct Quad_Encoder : Module {
             lights[FR_IN_LED].setBrightness(peakMeterFrIn.getLevel());
             lights[SL_IN_LED].setBrightness(peakMeterSlIn.getLevel());
             lights[SR_IN_LED].setBrightness(peakMeterSrIn.getLevel());
-            lights[MULTI_A_IN_LED + 2].setBrightness(peakMeterMultAIn.getLevel());
-            lights[MULTI_B_IN_LED + 2].setBrightness(peakMeterMultBIn.getLevel());
+            lights[MULTI_A_IN_LED + 2].setBrightness(peakMeterMultiAIn.getLevel());
+            lights[MULTI_B_IN_LED + 2].setBrightness(peakMeterMultiBIn.getLevel());
             lights[LT_OUT_LED].setBrightness(peakMeterLtOut.getLevel());
             lights[RT_OUT_LED].setBrightness(peakMeterRtOut.getLevel());
 
@@ -222,14 +222,14 @@ struct Quad_Encoder : Module {
         tempf += inputs[MULTI_A_IN].getPolyVoltage(2);
         tempf += inputs[MULTI_A_IN].getPolyVoltage(3);
         tempf *= AUDIO_IN_GAIN * 0.25;
-        peakMeterMultAIn.update(tempf);
+        peakMeterMultiAIn.update(tempf);
 
         tempf = inputs[MULTI_B_IN].getPolyVoltage(0);
         tempf += inputs[MULTI_B_IN].getPolyVoltage(1);
         tempf += inputs[MULTI_B_IN].getPolyVoltage(2);
         tempf += inputs[MULTI_B_IN].getPolyVoltage(3);
         tempf *= AUDIO_IN_GAIN * 0.25;
-        peakMeterMultBIn.update(tempf);
+        peakMeterMultiBIn.update(tempf);
 
         // matrix encoding
         flShifter.process(fl, &flDel, &flShift);
@@ -269,8 +269,8 @@ struct Quad_Encoder : Module {
         peakMeterFrIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
         peakMeterSlIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
         peakMeterSrIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterMultAIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterMultBIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
+        peakMeterMultiAIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
+        peakMeterMultiBIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
         peakMeterLtOut.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
         peakMeterRtOut.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
     }

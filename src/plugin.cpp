@@ -34,6 +34,7 @@ void init(Plugin* p) {
     p->addModel(modelTest_Osc);
     p->addModel(modelQuad_Panner);
     p->addModel(modelQuad_Encoder);
+    p->addModel(modelQuad_Decoder);
     p->addModel(modelMIDI_Monitor);
     p->addModel(modelMIDI_Repeater);
     p->addModel(modelMIDI_Merger);

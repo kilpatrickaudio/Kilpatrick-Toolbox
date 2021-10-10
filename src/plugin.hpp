@@ -33,6 +33,7 @@ extern Model* modelStereo_Meter;
 extern Model* modelTest_Osc;
 extern Model* modelQuad_Panner;
 extern Model* modelQuad_Encoder;
+extern Model* modelQuad_Decoder;
 extern Model* modelMIDI_Monitor;
 extern Model* modelMIDI_Repeater;
 extern Model* modelMIDI_Merger;

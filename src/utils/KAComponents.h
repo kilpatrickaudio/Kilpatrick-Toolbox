@@ -426,11 +426,11 @@ struct KilpatrickLabelHandler {
     // update the label
     virtual std::string updateLabel(int id) { return ""; }
 
-    // handle button on the label
-    virtual void onButton(int id, const event::Button& e) { }
+    // handle button on the label - return 1 if consumed the event, 0 otherwise
+    virtual int onLabelButton(int id, const event::Button& e) { return 0; }
 
-    // handle scroll on the label
-    virtual void onHoverScroll(int id, const event::HoverScroll& e) {}
+    // handle scroll on the label - return 1 if consumed the event, 0 otherwise
+    virtual int onLabelHoverScroll(int id, const event::HoverScroll& e) { return 0; }
 };
 
 // a custom label
@@ -488,16 +488,18 @@ struct KilpatrickLabel : widget::TransparentWidget {
 
 	void onButton(const event::Button& e) override {
         if(handler) {
-            handler->onButton(id, e);
-            e.consume(NULL);
+            if(handler->onLabelButton(id, e)) {
+                e.consume(NULL);
+            }
         }
         TransparentWidget::onButton(e);
     }
 
     void onHoverScroll(const event::HoverScroll& e) override {
         if(handler) {
-            handler->onHoverScroll(id, e);
-            e.consume(NULL);
+            if(handler->onLabelHoverScroll(id, e)) {
+                e.consume(NULL);
+            }
         }
         TransparentWidget::onHoverScroll(e);
     }
@@ -883,16 +885,18 @@ struct KilpatrickJoystick : widget::OpaqueWidget {
     	nvgFill(args.vg);
     }
 
+    // dragging
 	void onDragHover(const event::DragHover& e) override {
         Widget::onDragHover(e);
-        xPos = putils::clampf(xPos + (e.mouseDelta.x * moveScale), -1.0f, 1.0f);
-        yPos = putils::clampf(yPos + (-e.mouseDelta.y * moveScale), -1.0f, 1.0f);
+        xPos = ((e.pos.x / box.size.x) * 2.0f) - 1.0f;
+        yPos = -(((e.pos.y / box.size.y) * 2.0f) - 1.0f);
         e.consume(this);
         if(handler) {
             handler->updateJoystick(id, xPos, yPos);
         }
     }
 
+    // handle edge snapping
 	void onButton(const event::Button& e) override {
         float posX = ((e.pos.x / box.size.x) * 2.0f) - 1.0f;
         float posY = -(((e.pos.y / box.size.y) * 2.0f) - 1.0f);
