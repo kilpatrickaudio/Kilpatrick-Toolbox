@@ -25,7 +25,6 @@
 #include "utils/KAComponents.h"
 #include "utils/MenuHelper.h"
 #include "utils/PUtils.h"
-#include "plugin.hpp"
 
 struct Quad_Decoder : Module {
 	enum ParamId {
@@ -78,6 +77,7 @@ struct Quad_Decoder : Module {
     };
     int matrixMode;
 
+    // constructor
 	Quad_Decoder() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configParam(OUTPUT_POT, 0.f, 1.f, 0.5f, "OUTPUT LEVEL");
@@ -172,9 +172,7 @@ struct Quad_DecoderWidget : ModuleWidget {
 		setPanel(createPanel(asset::plugin(pluginInstance, "res/Quad_Decoder.svg")));
 
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
-		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		addParam(createParamCentered<KilpatrickKnobBlackRed>(mm2px(Vec(15.24, 24.5)), module, Quad_Decoder::OUTPUT_POT));
 

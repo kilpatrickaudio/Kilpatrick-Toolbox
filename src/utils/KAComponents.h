@@ -724,6 +724,7 @@ struct KALevelmeter {
     float peak;  // dB level -96.0f to 0.0f
     int textSlowCount = 0;
     int textSlowdown = 0;  // slowdown level (0 = disable)
+    int textDrawDecimal = 1;  // default on
     char peakStr[64];
     int refLevelChangeTimeout = 0;
 
@@ -731,7 +732,7 @@ struct KALevelmeter {
     KALevelmeter() {
         textColor = nvgRGBA(0xff, 0xff, 0xff, 0xff);
         textRefColor = nvgRGBA(0xff, 0x00, 0x00, 0xff);
-        bgColor = nvgRGBA(0x33, 0x33, 0x33, 0xff);
+        bgColor = nvgRGBA(0x33, 0x73, 0x33, 0xff);
         barColor = nvgRGBA(0x00, 0xe0, 0x00, 0xff);
         peakColor = nvgRGBA(0xe0, 0x00, 0x00, 0xff);
         level = -96.0f;
@@ -800,8 +801,11 @@ struct KALevelmeter {
                     refLevelChangeTimeout --;
                     sprintf(peakStr, "%3.1f", refLevel);
                 }
-                else {
+                else if(textDrawDecimal) {
                     sprintf(peakStr, "%3.1f", level + refLevel);
+                }
+                else {
+                    sprintf(peakStr, "%3.0f", level + refLevel);
                 }
                 textSlowCount = 0;
             }
@@ -854,6 +858,7 @@ struct KilpatrickJoystick : widget::OpaqueWidget {
     NVGcolor knobColor;
     float xPos = 0.0f;
     float yPos = 0.0f;
+    float startX, startY;
     float moveScale;
     float controlAreaScale = 1.0f;
     static constexpr float borderSize = 0.5f;  // size for detecting edge buttons
@@ -885,27 +890,20 @@ struct KilpatrickJoystick : widget::OpaqueWidget {
     	nvgFill(args.vg);
     }
 
-    // dragging
-	void onDragHover(const event::DragHover& e) override {
-        Widget::onDragHover(e);
-        xPos = ((e.pos.x / box.size.x) * 2.0f) - 1.0f;
-        yPos = -(((e.pos.y / box.size.y) * 2.0f) - 1.0f);
-        e.consume(this);
-        if(handler) {
-            handler->updateJoystick(id, xPos, yPos);
-        }
-    }
-
     // handle edge snapping
 	void onButton(const event::Button& e) override {
         float posX = ((e.pos.x / box.size.x) * 2.0f) - 1.0f;
         float posY = -(((e.pos.y / box.size.y) * 2.0f) - 1.0f);
 
-        if(!snap) {
+        e.consume(this);  // prevent entire module from dragging
+        startX = posX;
+        startY = posY;
+
+        if(e.action != GLFW_PRESS || e.button != GLFW_MOUSE_BUTTON_LEFT) {
             return;
         }
 
-        if(e.button != GLFW_MOUSE_BUTTON_LEFT || e.action != GLFW_PRESS) {
+        if(!snap) {
             return;
         }
 
@@ -962,21 +960,39 @@ struct KilpatrickJoystick : widget::OpaqueWidget {
         if(handler) {
             handler->updateJoystick(id, xPos, yPos);
         }
-        e.consume(this);
     }
 
+    // dragging
+	void onDragHover(const event::DragHover& e) override {
+        float newX, newY;
+        newX = ((e.pos.x / box.size.x) * 2.0f) - 1.0f;
+        newY = -(((e.pos.y / box.size.y) * 2.0f) - 1.0f);
+
+        xPos = putils::clampf(xPos + (newX - startX), -1.0f, 1.0f);
+        yPos = putils::clampf(yPos + (newY - startY), -1.0f, 1.0f);
+        startX = newX;
+        startY = newY;
+
+        if(handler) {
+            handler->updateJoystick(id, xPos, yPos);
+        }
+    }
+
+    // key
     void onHoverKey(const event::HoverKey& e) override {
         if(e.key == GLFW_KEY_P) {
+            PDEBUG("snap");
             snap = 1;
         }
-        e.consume(this);
     }
 
     void onLeave(const event::Leave& e) override {
         snap = 0;
-        e.consume(this);
     }
 
+    void onDragLeave(const event::DragLeave& e) override {
+        snap = 0;
+    }
 };
 
 #endif

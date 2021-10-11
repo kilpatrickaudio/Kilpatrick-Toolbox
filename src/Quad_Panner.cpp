@@ -61,6 +61,7 @@ struct Quad_Panner : Module, KilpatrickJoystickHandler {
     static constexpr float CV_IN_SCALE = 0.2;  // -5V to +5V
     static constexpr float PEAK_METER_SMOOTHING = 10.0f;
     static constexpr float PEAK_METER_PEAK_HOLD_TIME = 0.1f;
+    static constexpr float AUDIO_IN_GAIN = 0.1f;
     dsp::ClockDivider taskTimer;
     float sumPosX, sumPosY;  // -1.0 to +1.0
     float joyPosX, joyPosY;  // -1.0 to +1.0
@@ -78,6 +79,7 @@ struct Quad_Panner : Module, KilpatrickJoystickHandler {
     dsp2::Levelmeter peakMeterSlOut;
     dsp2::Levelmeter peakMeterSrOut;
 
+    // constructor
 	Quad_Panner() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configParam(RESET_SW, 0.f, 1.f, 0.f, "RESET");
@@ -150,10 +152,10 @@ struct Quad_Panner : Module, KilpatrickJoystickHandler {
         outputs[SL_OUT].setVoltage(multiOut[2]);
         outputs[SR_OUT].setVoltage(multiOut[3]);
         outputs[MULTI_OUT].writeVoltages(multiOut);
-        peakMeterFlOut.update(multiOut[0]);
-        peakMeterFrOut.update(multiOut[1]);
-        peakMeterSlOut.update(multiOut[2]);
-        peakMeterSrOut.update(multiOut[3]);
+        peakMeterFlOut.update(multiOut[0] * AUDIO_IN_GAIN);
+        peakMeterFrOut.update(multiOut[1] * AUDIO_IN_GAIN);
+        peakMeterSlOut.update(multiOut[2] * AUDIO_IN_GAIN);
+        peakMeterSrOut.update(multiOut[3] * AUDIO_IN_GAIN);
 	}
 
     // samplerate changed

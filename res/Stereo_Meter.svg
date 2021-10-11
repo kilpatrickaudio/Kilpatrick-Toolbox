@@ -49,11 +49,11 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="2.8"
-     inkscape:cx="-46.122784"
-     inkscape:cy="300.2681"
+     inkscape:zoom="5.6"
+     inkscape:cx="57.615491"
+     inkscape:cy="125.13339"
      inkscape:document-units="mm"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="layer3"
      showgrid="false"
      showguides="true"
      inkscape:guide-bbox="true"
@@ -342,7 +342,7 @@
        style="display:inline;fill:#00ff00;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path1034-5-0"
        cx="15.24"
-       cy="112.5"
+       cy="108.5"
        r="1" />
     <circle
        style="display:inline;fill:#ff0000;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
@@ -354,7 +354,7 @@
        style="display:inline;fill:#00ff00;fill-opacity:1;stroke:none;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path1034-5-0-3"
        cx="15.24"
-       cy="96.5"
+       cy="94.5"
        r="1" />
   </g>
 </svg>

@@ -412,6 +412,10 @@ struct Levelmeter {
     float peak;
     int peakTimeout;
     int peakHoldTime;
+    Filter2Pole hpf;  // optional high pass filter
+    int useHighpass;  // set to 1 to pass signal through 10Hz highpass filter
+    static constexpr float PEAK_METER_SMOOTHING = 1.0f;
+    static constexpr float PEAK_METER_PEAK_HOLD_TIME = 1.0f;
 
     // constructor
     Levelmeter() {
@@ -420,10 +424,15 @@ struct Levelmeter {
         peakTimeout = 0;
         smoothing = 0.999f;
         peakHoldTime = 24000;
+        useHighpass = 0;  // disable
+        onSampleRateChange();
     }
 
     // update the meter
     void update(float val) {
+        if(useHighpass) {
+            val = hpf.process(val);
+        }
         if(val > hist) {
             hist = clamp(val);
             peak = hist;
@@ -435,6 +444,13 @@ struct Levelmeter {
                 peakTimeout --;
             }
         }
+    }
+
+    // call this if the samplerate changes
+    void onSampleRateChange(void) {
+        hpf.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
+        setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
+        setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
     }
 
     // set the smoothing freq cutoff

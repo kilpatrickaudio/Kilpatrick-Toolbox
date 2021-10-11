@@ -42,6 +42,7 @@ extern Model* modelMIDI_Input;
 extern Model* modelMIDI_Output;
 extern Model* modelMIDI_CV;
 extern Model* modelMIDI_Channel;
+extern Model* modelMulti_Meter;
 
 // settings
 extern NVGcolor MIDI_LABEL_FG_COLOR;

@@ -246,6 +246,7 @@ struct MIDI_Channel : Module, KilpatrickLabelHandler {
                 resetOutputNotes = 1;  // force reset
                 break;
         }
+        return 1;
     }
 };
 

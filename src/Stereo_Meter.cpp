@@ -34,10 +34,10 @@ struct Stereo_MeterDisplaySource {
     virtual void onHoverScroll(int id, const event::HoverScroll& e) { }
 
     // get the reference level for a meter
-    virtual float getRefLevel(int meterIndex) { return 0.0f; }
+    virtual float getRefLevel(int chan) { return 0.0f; }
 
     // set the reference level for a meter
-    virtual void setRefLevel(int meterIndex, float level) { }
+    virtual void setRefLevel(int chan, float level) { }
 };
 
 struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
@@ -57,15 +57,9 @@ struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
 	enum LightIds {
 		NUM_LIGHTS
 	};
-    static constexpr int RT_TASK_RATE = 1000;
     static constexpr float AUDIO_IN_GAIN = 0.1f;
-    static constexpr float PEAK_METER_SMOOTHING = 1.0f;
-    static constexpr float PEAK_METER_PEAK_HOLD_TIME = 1.0f;
-    dsp::ClockDivider taskTimer;
-    dsp2::Filter2Pole hpfL;
-    dsp2::Filter2Pole hpfR;
-    dsp2::Levelmeter peakMeterL;
-    dsp2::Levelmeter peakMeterR;
+    dsp2::Levelmeter meterProcL;
+    dsp2::Levelmeter meterProcR;
 
     // constructor
 	Stereo_Meter() {
@@ -74,30 +68,20 @@ struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
         configParam(REF_LEVEL_R, -60.0f, 24.0f, 0.0f, "REF LEVEL R");
         onReset();
         onSampleRateChange();
+        meterProcL.useHighpass = 1;
+        meterProcR.useHighpass = 1;
 	}
 
     // process a sample
 	void process(const ProcessArgs& args) override {
-        float inL, inR;
-        // run tasks
-        if(taskTimer.process()) {
-        }
-
-        inL = hpfL.process(inputs[IN_L].getVoltage()) * AUDIO_IN_GAIN;
-        inR = hpfR.process(inputs[IN_R].getVoltage()) * AUDIO_IN_GAIN;
-        peakMeterL.update(inL);
-        peakMeterR.update(inR);
+        meterProcL.update(inputs[IN_L].getVoltage() * AUDIO_IN_GAIN);
+        meterProcR.update(inputs[IN_R].getVoltage() * AUDIO_IN_GAIN);
 	}
 
     // samplerate changed
     void onSampleRateChange(void) override {
-        taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
-        hpfL.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
-        hpfR.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
-        peakMeterL.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterR.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterL.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterR.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
+        meterProcL.onSampleRateChange();
+        meterProcR.onSampleRateChange();
     }
 
     // module initialize
@@ -110,25 +94,25 @@ struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
     // get the peak meter levels
     void getPeakDbLevels(int chan, float *level, float *peak) override {
         if(chan) {
-            *level = peakMeterR.getDbLevel();
-            *peak = peakMeterR.getPeakDbLevel();
+            *level = meterProcR.getDbLevel();
+            *peak = meterProcR.getPeakDbLevel();
             return;
         }
-        *level = peakMeterL.getDbLevel();
-        *peak = peakMeterL.getPeakDbLevel();
+        *level = meterProcL.getDbLevel();
+        *peak = meterProcL.getPeakDbLevel();
     }
 
     // get the reference level for a meter
-    float getRefLevel(int meterIndex) override {
-        if(meterIndex) {
+    float getRefLevel(int chan) override {
+        if(chan) {
             return params[REF_LEVEL_R].getValue();
         }
         return params[REF_LEVEL_L].getValue();
     }
 
     // set the reference level for a meter
-    void setRefLevel(int meterIndex, float level) override {
-        if(meterIndex) {
+    void setRefLevel(int chan, float level) override {
+        if(chan) {
             params[REF_LEVEL_R].setValue(level);
         }
         else {
@@ -143,37 +127,37 @@ struct Stereo_MeterDisplay : widget::TransparentWidget {
     Stereo_MeterDisplaySource *source;
     float rad;
     NVGcolor bgColor;
-    KALevelmeter peakMeterL;
-    KALevelmeter peakMeterR;
+    KALevelmeter meterL;
+    KALevelmeter meterR;
 
     // create a display
     Stereo_MeterDisplay(int id, math::Vec pos, math::Vec size) {
         this->id = id;
         this->source = NULL;
-        rad = mm2px(2.0);
+        rad = mm2px(1.625);
         box.pos = pos.minus(size.div(2));
         box.size = size;
         bgColor = nvgRGBA(0x00, 0x00, 0x00, 0xff);
-        peakMeterL.textSlowdown = 8;
-        peakMeterL.textColor = nvgRGBA(0xe0, 0xe0, 0xe0, 0xff);
-        peakMeterL.bgColor = nvgRGBA(0x30, 0x30, 0x30, 0xff);
-        peakMeterL.barColor = nvgRGBA(0x00, 0xe0, 0x00, 0xff);
-        peakMeterL.peakColor = nvgRGBA(0xe0, 0x00, 0x00, 0xff);
-        peakMeterL.size.x = box.size.x * 0.4f;
-        peakMeterL.size.y = box.size.y * 0.87f;
-        peakMeterL.pos.x = (box.size.x * 0.28f) - (peakMeterL.size.x * 0.5f);
-        peakMeterL.pos.y = box.size.y * 0.02f;
-        peakMeterL.setMinLevel(-96.0f);
-        peakMeterR.textSlowdown = 8;
-        peakMeterR.textColor = nvgRGBA(0xe0, 0xe0, 0xe0, 0xff);
-        peakMeterR.bgColor = nvgRGBA(0x30, 0x30, 0x30, 0xff);
-        peakMeterR.barColor = nvgRGBA(0x00, 0xe0, 0x00, 0xff);
-        peakMeterR.peakColor = nvgRGBA(0xe0, 0x00, 0x00, 0xff);
-        peakMeterR.size.x = box.size.x * 0.4f;
-        peakMeterR.size.y = box.size.y * 0.87f;
-        peakMeterR.pos.x = (box.size.x * 0.72f) - (peakMeterR.size.x * 0.5f);
-        peakMeterR.pos.y = box.size.y * 0.02f;
-        peakMeterR.setMinLevel(-96.0f);
+        meterL.textSlowdown = 8;
+        meterL.textColor = nvgRGBA(0xe0, 0xe0, 0xe0, 0xff);
+        meterL.bgColor = nvgRGBA(0x30, 0x30, 0x30, 0xff);
+        meterL.barColor = nvgRGBA(0x00, 0xe0, 0x00, 0xff);
+        meterL.peakColor = nvgRGBA(0xe0, 0x00, 0x00, 0xff);
+        meterL.size.x = box.size.x * 0.4f;
+        meterL.size.y = box.size.y * 0.87f;
+        meterL.pos.x = (box.size.x * 0.28f) - (meterL.size.x * 0.5f);
+        meterL.pos.y = box.size.y * 0.02f;
+        meterL.setMinLevel(-96.0f);
+        meterR.textSlowdown = 8;
+        meterR.textColor = nvgRGBA(0xe0, 0xe0, 0xe0, 0xff);
+        meterR.bgColor = nvgRGBA(0x30, 0x30, 0x30, 0xff);
+        meterR.barColor = nvgRGBA(0x00, 0xe0, 0x00, 0xff);
+        meterR.peakColor = nvgRGBA(0xe0, 0x00, 0x00, 0xff);
+        meterR.size.x = box.size.x * 0.4f;
+        meterR.size.y = box.size.y * 0.87f;
+        meterR.pos.x = (box.size.x * 0.72f) - (meterR.size.x * 0.5f);
+        meterR.pos.y = box.size.y * 0.02f;
+        meterR.setMinLevel(-96.0f);
     }
 
     // draw
@@ -190,15 +174,15 @@ struct Stereo_MeterDisplay : widget::TransparentWidget {
         nvgFill(args.vg);
 
         source->getPeakDbLevels(0, &level, &peak);
-        peakMeterL.setLevels(level, peak);
-        peakMeterL.setRefLevel(source->getRefLevel(0));
+        meterL.setLevels(level, peak);
+        meterL.setRefLevel(source->getRefLevel(0));
 
         source->getPeakDbLevels(1, &level, &peak);
-        peakMeterR.setLevels(level, peak);
-        peakMeterR.setRefLevel(source->getRefLevel(1));
+        meterR.setLevels(level, peak);
+        meterR.setRefLevel(source->getRefLevel(1));
 
-        peakMeterL.draw(args);
-        peakMeterR.draw(args);
+        meterL.draw(args);
+        meterR.draw(args);
     }
 
     void onHoverScroll(const event::HoverScroll& e) override {

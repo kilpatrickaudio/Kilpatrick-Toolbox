@@ -25,7 +25,6 @@
 #include "utils/KAComponents.h"
 #include "utils/MenuHelper.h"
 #include "utils/PUtils.h"
-#include "plugin.hpp"
 
 struct Quad_Encoder : Module {
 	enum ParamId {
@@ -86,7 +85,14 @@ struct Quad_Encoder : Module {
     int matrixMode;
     float ltFlMix, ltFrMix, ltSlMix, ltSlShiftMix, ltSrMix, ltSrShiftMix;
     float rtFlMix, rtFrMix, rtSlMix, rtSlShiftMix, rtSrMix, rtSrShiftMix;
+    dsp2::Filter2Pole hpfFl;
+    dsp2::Filter2Pole hpfFr;
+    dsp2::Filter2Pole hpfSl;
+    dsp2::Filter2Pole hpfSr;
+    dsp2::Filter2Pole hpfMultiA;
+    dsp2::Filter2Pole hpfMultiB;
 
+    // constructor
 	Quad_Encoder() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configParam(OUTPUT_POT, 0.f, 1.f, 0.5f, "OUTPUT LEVEL");
@@ -105,7 +111,7 @@ struct Quad_Encoder : Module {
 
     // process a sample
 	void process(const ProcessArgs& args) override {
-        float fl, fr, sl, sr, tempf;
+        float fl, fr, sl, sr, multiSumA, multiSumB, tempf;
         float flDel, flShift, frDel, frShift;
         float slDel, slShift, srDel, srShift;
 
@@ -194,42 +200,53 @@ struct Quad_Encoder : Module {
 
         // get inputs
         fl = inputs[FL_IN].getVoltage();
-        fl += inputs[MULTI_A_IN].getPolyVoltage(0);
-        fl += inputs[MULTI_B_IN].getPolyVoltage(0);
+        tempf = inputs[MULTI_A_IN].getPolyVoltage(0);
+        multiSumA = tempf;
+        fl += tempf;
+        tempf = inputs[MULTI_B_IN].getPolyVoltage(0);
+        multiSumB = tempf;
+        fl += tempf;
+        fl = hpfFl.process(fl);
         fl *= AUDIO_IN_GAIN;
         peakMeterFlIn.update(fl);
 
         fr = inputs[FR_IN].getVoltage();
-        fr += inputs[MULTI_A_IN].getPolyVoltage(1);
-        fr += inputs[MULTI_B_IN].getPolyVoltage(1);
+        tempf = inputs[MULTI_A_IN].getPolyVoltage(1);
+        multiSumA += tempf;
+        fr += tempf;
+        tempf = inputs[MULTI_B_IN].getPolyVoltage(1);
+        multiSumB += tempf;
+        fr += tempf;
+        fr = hpfFr.process(fr);
         fr *= AUDIO_IN_GAIN;
         peakMeterFrIn.update(fr);
 
         sl = inputs[SL_IN].getVoltage();
-        sl += inputs[MULTI_A_IN].getPolyVoltage(2);
-        sl += inputs[MULTI_B_IN].getPolyVoltage(2);
+        tempf = inputs[MULTI_A_IN].getPolyVoltage(2);
+        multiSumA += tempf;
+        sl += tempf;
+        tempf = inputs[MULTI_B_IN].getPolyVoltage(2);
+        multiSumB += tempf;
+        sl += tempf;
+        sl = hpfSl.process(sl);
         sl *= AUDIO_IN_GAIN;
         peakMeterSlIn.update(sl);
 
         sr = inputs[SR_IN].getVoltage();
-        sr += inputs[MULTI_A_IN].getPolyVoltage(3);
-        sr += inputs[MULTI_B_IN].getPolyVoltage(3);
+        tempf = inputs[MULTI_A_IN].getPolyVoltage(3);
+        multiSumA += tempf;
+        sr += tempf;
+        tempf = inputs[MULTI_B_IN].getPolyVoltage(3);
+        multiSumB += tempf;
+        sr += tempf;
+        sr = hpfSr.process(sr);
         sr *= AUDIO_IN_GAIN;
         peakMeterSrIn.update(sr);
 
-        tempf = inputs[MULTI_A_IN].getPolyVoltage(0);
-        tempf += inputs[MULTI_A_IN].getPolyVoltage(1);
-        tempf += inputs[MULTI_A_IN].getPolyVoltage(2);
-        tempf += inputs[MULTI_A_IN].getPolyVoltage(3);
-        tempf *= AUDIO_IN_GAIN * 0.25;
-        peakMeterMultiAIn.update(tempf);
-
-        tempf = inputs[MULTI_B_IN].getPolyVoltage(0);
-        tempf += inputs[MULTI_B_IN].getPolyVoltage(1);
-        tempf += inputs[MULTI_B_IN].getPolyVoltage(2);
-        tempf += inputs[MULTI_B_IN].getPolyVoltage(3);
-        tempf *= AUDIO_IN_GAIN * 0.25;
-        peakMeterMultiBIn.update(tempf);
+        multiSumA = hpfMultiA.process(multiSumA * AUDIO_IN_GAIN * 0.25f);
+        peakMeterMultiAIn.update(multiSumA);
+        multiSumB = hpfMultiB.process(multiSumB * AUDIO_IN_GAIN * 0.25f);
+        peakMeterMultiBIn.update(multiSumB);
 
         // matrix encoding
         flShifter.process(fl, &flDel, &flShift);
@@ -242,8 +259,8 @@ struct Quad_Encoder : Module {
             (slDel * ltSlMix) +
             (slShift * ltSlShiftMix) +
             (srDel * ltSrMix) +
-            (srShift * ltSrShiftMix)) * AUDIO_OUT_GAIN * params[OUTPUT_POT].getValue();
-        outputs[LT_OUT].setVoltage(tempf);
+            (srShift * ltSrShiftMix)) * params[OUTPUT_POT].getValue();
+        outputs[LT_OUT].setVoltage(tempf * AUDIO_OUT_GAIN);
         peakMeterLtOut.update(tempf);
 
         tempf = ((flDel * rtFlMix) +
@@ -251,14 +268,20 @@ struct Quad_Encoder : Module {
             (slDel * rtSlMix) +
             (slShift * rtSlShiftMix) +
             (srDel * rtSrMix) +
-            (srShift * rtSrShiftMix)) * AUDIO_OUT_GAIN * params[OUTPUT_POT].getValue();
-        outputs[RT_OUT].setVoltage(tempf);
+            (srShift * rtSrShiftMix)) * params[OUTPUT_POT].getValue();
+        outputs[RT_OUT].setVoltage(tempf * AUDIO_OUT_GAIN);
         peakMeterRtOut.update(tempf);
 	}
 
     // samplerate changed
     void onSampleRateChange(void) override {
         taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
+        hpfFl.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
+        hpfFr.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
+        hpfSl.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
+        hpfSr.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
+        hpfMultiA.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
+        hpfMultiB.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
         peakMeterFlIn.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
         peakMeterFrIn.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
         peakMeterSlIn.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
