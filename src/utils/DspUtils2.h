@@ -433,6 +433,7 @@ struct Levelmeter {
         if(useHighpass) {
             val = hpf.process(val);
         }
+        val = dsp2::abs(val);
         if(val > hist) {
             hist = clamp(val);
             peak = hist;

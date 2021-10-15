@@ -42,6 +42,13 @@ struct Multi_MeterDisplaySource {
 
     // get the MeterMode
     virtual int getMeterMode(void) { return 0; }
+
+    // full a buffer of points from the XY ringbuffer up to maxSize
+    // returns the number of points
+    virtual int getXyPoints(Vec *buf, int maxSize) { return 0; }
+
+    // clear the XY point buf
+    virtual void clearXyPoints(void) { }
 };
 
 struct Multi_Meter : Module, Multi_MeterDisplaySource {
@@ -78,14 +85,9 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
 	enum LightId {
 		LIGHTS_LEN
 	};
+    static constexpr int XY_BUFLEN = 4096;
     static constexpr int MAX_CHANNELS = 16;
     static constexpr float AUDIO_IN_GAIN = 0.1f;
-    enum MeterMode {
-        METER_2CH,
-        METER_4CH,
-        METER_8CH,
-        METER_16CH
-    };
     enum ModeSwMode {
         MODE_MULTI,
         MODE_XY
@@ -95,7 +97,15 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
         CHANNELS_8,
         CHANNELS_4
     };
+    // combined meter mode
+    enum MeterMode {
+        METER_XY,
+        METER_4CH,
+        METER_8CH,
+        METER_16CH
+    };
     dsp2::Levelmeter meterProc[MAX_CHANNELS];
+    dsp::RingBuffer<Vec, XY_BUFLEN> xyBuf;
 
     // constructor
 	Multi_Meter() {
@@ -120,6 +130,7 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
         in2 = (inputs[MULTI_IN].getPolyVoltage(1) + inputs[IN_R].getVoltage()) * AUDIO_IN_GAIN;
         meterProc[0].update(in1);
         meterProc[1].update(in2);
+        xyBuf.push(Vec(in1, in2));
 
         // get channel 3-16
         for(int i = 2; i < inputs[MULTI_IN].getChannels(); i ++) {
@@ -175,7 +186,7 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
     int getMeterMode(void) override {
         switch((int)params[MODE_SW].getValue()) {
             case ModeSwMode::MODE_XY:
-                return MeterMode::METER_2CH;
+                return MeterMode::METER_XY;
             default:
                 switch((int)params[CHAN_SW].getValue()) {
                     case CHANNELS_4:
@@ -189,6 +200,22 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
                 return MeterMode::METER_16CH;
         }
     }
+
+    // full a buffer of points from the XY ringbuffer up to maxSize
+    // returns the number of points
+    int getXyPoints(Vec *buf, int maxSize) override {
+        int len = xyBuf.size();
+        if(len > maxSize) len = maxSize;
+        if(len > 0) {
+            xyBuf.shiftBuffer(buf, len);
+        }
+        return len;
+    }
+
+    // clear the XY point buf
+    void clearXyPoints(void) override {
+        xyBuf.clear();
+    }
 };
 
 // levelmeter / scope display
@@ -197,10 +224,15 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
     Multi_MeterDisplaySource *source;
     float rad;
     NVGcolor bgColor;
+    NVGcolor scopeGridColor;
+    NVGcolor scopeColor;
     KALevelmeter multimeters[Multi_Meter::MAX_CHANNELS];
     KALevelmeter meters[Multi_Meter::MAX_CHANNELS];
     KALevelmeter meterR;
     int meterMode = -1;  // force reload
+    static constexpr int XY_BUFLEN = 4096;
+    Vec xyBuf[XY_BUFLEN];
+    Vec xyOld;
 
     // create a display
     Multi_MeterDisplay(int id, math::Vec pos, math::Vec size) {
@@ -210,6 +242,10 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
         box.pos = pos.minus(size.div(2));
         box.size = size;
         bgColor = nvgRGBA(0x00, 0x00, 0x00, 0xff);
+        scopeGridColor = nvgRGBA(0x00, 0x99, 0x99, 0xff);
+        scopeColor = nvgRGBA(0x00, 0xff, 0xff, 0xff);
+        xyOld.x = 0.0f;
+        xyOld.y = 0.0f;
 
         for(int i = 0; i < Multi_Meter::MAX_CHANNELS; i ++) {
             meters[i].fontSizeReadout = 8.0;
@@ -273,6 +309,49 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
             meters[i].setRefLevel(source->getRefLevel(i));
             meters[i].draw(args);
         }
+
+        // for X/Y mode render the scope
+        if(meterMode == Multi_Meter::METER_XY) {
+            float scopeHalfSize = box.size.x * 0.35f;
+            float scopeXPos = (box.size.x * 0.5f) + (box.size.x * 0.05f);
+            float scopeYPos = box.size.y * 0.5f;
+
+            // draw graticule
+            nvgBeginPath(args.vg);
+            nvgRect(args.vg, scopeXPos - scopeHalfSize, scopeYPos - scopeHalfSize,
+                scopeHalfSize * 2.0f, scopeHalfSize * 2.0f);
+            nvgMoveTo(args.vg, scopeXPos, scopeYPos - scopeHalfSize);
+            nvgLineTo(args.vg, scopeXPos, scopeYPos + scopeHalfSize);
+            nvgMoveTo(args.vg, scopeXPos - scopeHalfSize, scopeYPos);
+            nvgLineTo(args.vg, scopeXPos + scopeHalfSize, scopeYPos);
+            nvgMoveTo(args.vg, scopeXPos - scopeHalfSize, scopeYPos - scopeHalfSize);
+            nvgLineTo(args.vg, scopeXPos + scopeHalfSize, scopeYPos + scopeHalfSize);
+            nvgMoveTo(args.vg, scopeXPos - scopeHalfSize, scopeYPos + scopeHalfSize);
+            nvgLineTo(args.vg, scopeXPos + scopeHalfSize, scopeYPos - scopeHalfSize);
+            nvgStrokeColor(args.vg, scopeGridColor);
+            nvgStrokeWidth(args.vg, 1.0f);
+            nvgStroke(args.vg);
+
+            // draw X/Y data
+            int len = source->getXyPoints(xyBuf, XY_BUFLEN);
+            if(len == 0) {
+                return;
+            }
+            nvgBeginPath(args.vg);
+            nvgMoveTo(args.vg, (xyOld.x * scopeHalfSize) + scopeXPos,
+                (-xyOld.y * scopeHalfSize) + scopeYPos);
+            for(int i = 0; i < len; i ++) {
+                nvgLineTo(args.vg, (xyBuf[i].x * scopeHalfSize) + scopeXPos,
+                    (-xyBuf[i].y * scopeHalfSize) + scopeYPos);
+            }
+            xyOld = xyBuf[len-1];
+            nvgStrokeColor(args.vg, scopeColor);
+            nvgStrokeWidth(args.vg, 1.5f);
+            nvgStroke(args.vg);
+        }
+        else {
+            source->clearXyPoints();
+        }
     }
 
     void onHoverScroll(const event::HoverScroll& e) override {
@@ -300,7 +379,7 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
     // convert the meter mode into the number of meters
     int getNumMeters(void) {
         switch(meterMode) {
-            case Multi_Meter::METER_2CH:
+            case Multi_Meter::METER_XY:
                 return 2;
             case Multi_Meter::METER_4CH:
                 return 4;
