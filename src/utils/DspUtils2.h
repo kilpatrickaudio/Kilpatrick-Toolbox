@@ -408,10 +408,12 @@ struct Filter2Pole {
 // levelmeter with peak hold
 struct Levelmeter {
     float hist;
-    float smoothing;
     float peak;
-    int peakTimeout;
     int peakHoldTime;
+    float smoothingSetting;  // user setting
+    float peakTimeoutSetting;  // user setting
+    float smoothing;  // coeff
+    int peakTimeout;  // coeff
     Filter2Pole hpf;  // optional high pass filter
     int useHighpass;  // set to 1 to pass signal through 10Hz highpass filter
     static constexpr float PEAK_METER_SMOOTHING = 1.0f;
@@ -421,9 +423,10 @@ struct Levelmeter {
     Levelmeter() {
         hist = 0.0f;
         peak = 0.0f;
-        peakTimeout = 0;
-        smoothing = 0.999f;
+        smoothingSetting = PEAK_METER_SMOOTHING;
+        peakTimeoutSetting = PEAK_METER_PEAK_HOLD_TIME;
         peakHoldTime = 24000;
+        peakTimeout = 0;
         useHighpass = 0;  // disable
         onSampleRateChange();
     }
@@ -450,18 +453,20 @@ struct Levelmeter {
     // call this if the samplerate changes
     void onSampleRateChange(void) {
         hpf.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
-        setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
+        setSmoothingFreq(smoothingSetting, APP->engine->getSampleRate());
+        setPeakHoldTime(peakTimeoutSetting, APP->engine->getSampleRate());
     }
 
     // set the smoothing freq cutoff
     void setSmoothingFreq(float freq, float fs) {
-        smoothing = expf(-2.0 * M_PI * (freq / fs));
+        smoothingSetting = freq;
+        smoothing = expf(-2.0 * M_PI * (smoothingSetting / fs));
     }
 
     // set the peak hold time in seconds
     void setPeakHoldTime(float time, float fs) {
-        peakTimeout = (int)roundf(time * fs);
+        peakTimeoutSetting = time;
+        peakTimeout = (int)roundf(peakTimeoutSetting * fs);
     }
 
     // get the current level as field size
@@ -492,6 +497,36 @@ struct Levelmeter {
             return -96.0;
         }
         return clampRange(fieldToDb(peak), -96.0f, 0.0f);
+    }
+};
+
+// a form of levelmeter for LEDs
+struct LevelLed {
+    Levelmeter meter;
+
+    // constructor
+    LevelLed() {
+        meter.setSmoothingFreq(10.f, APP->engine->getSampleRate());
+    }
+
+    // call this if the samplerate changes
+    void onSampleRateChange(void) {
+        meter.onSampleRateChange();
+    }
+
+    // update the meter with a cable signal (-10V to +10V) signal
+    void update(float level) {
+        meter.update(level * 0.1);
+    }
+
+    // update the meter with a normalized (-1.0V to +1.0v) signal
+    void updateNormalized(float level) {
+        meter.update(level);
+    }
+
+    // get the brightness
+    float getBrightness(void) {
+        return meter.getLevel();
     }
 };
 
@@ -789,55 +824,48 @@ struct DelayMem16 : DelayMem {
     }
 };
 
-// audio bufferer
+// audio bufferer - can be used for input or output
+// for input: add samples one at a time and then read the buf directly
+// for output: write to buf director, then read sample by sample
 // convert to/from single samples to buffer blocks
 struct AudioBufferer {
-    float *inBuf = NULL;
-    float *outBuf = NULL;
-    int inBufCount;
-    int outBufCount;
-    int inBufSizeFrames;
-    int inBufSizeSamps;
+    float *buf = NULL;
+    int bufCount;
+    int bufSizeFrames;
+    int bufSizeSamps;
 
     // constructor
-    AudioBufferer(int bufsize, int inChans, int outChans) {
+    AudioBufferer(int bufsize, int chans) {
         int i;
-        inBuf = (float *)malloc(sizeof(float) * bufsize * inChans);
-        outBuf = (float *)malloc(sizeof(float) * bufsize * outChans);
-        for(i = 0; i < bufsize * inChans; i ++) {
-            inBuf[i] = 0.0f;
+        buf = (float *)malloc(sizeof(float) * bufsize * chans);
+        for(i = 0; i < bufsize * chans; i ++) {
+            buf[i] = 0.0f;
         }
-        for(i = 0; i < bufsize * outChans; i ++) {
-            outBuf[i] = 0.0f;
-        }
-        inBufSizeFrames = bufsize;
-        inBufSizeSamps = bufsize * inChans;
-        inBufCount = 0;
-        outBufCount = 0;
+        bufSizeFrames = bufsize;
+        bufSizeSamps = bufsize * chans;
+        bufCount = 0;
     }
 
     // destructor
     ~AudioBufferer() {
-        free(inBuf);
-        free(outBuf);
+        free(buf);
     }
 
-    // add an input sample
+    // add an input sample - for single write, bulk read
     void addInSample(float val) {
-        inBuf[inBufCount++] = val;
+        buf[bufCount++] = val;
     }
 
-    // get an output sample
+    // get an output sample - for bulk write, single read
     float getOutSample(void) {
-        return outBuf[outBufCount++];
+        return buf[bufCount++];
     }
 
     // check if the inbuf is full and reset if it is
     // returns 1 if full, 0 otherwise
     int isFull(void) {
-        if(inBufCount >= inBufSizeSamps) {
-            inBufCount = 0;
-            outBufCount = 0;
+        if(bufCount >= bufSizeSamps) {
+            bufCount = 0;
             return 1;
         }
         return 0;

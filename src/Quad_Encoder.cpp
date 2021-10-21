@@ -63,14 +63,14 @@ struct Quad_Encoder : Module {
     static constexpr float AUDIO_OUT_GAIN = 10.0f;  // save mixing headroom
     static constexpr float PEAK_METER_SMOOTHING = 10.0f;
     static constexpr float PEAK_METER_PEAK_HOLD_TIME = 0.1f;
-    dsp2::Levelmeter peakMeterFlIn;
-    dsp2::Levelmeter peakMeterFrIn;
-    dsp2::Levelmeter peakMeterSlIn;
-    dsp2::Levelmeter peakMeterSrIn;
-    dsp2::Levelmeter peakMeterLtOut;
-    dsp2::Levelmeter peakMeterRtOut;
-    dsp2::Levelmeter peakMeterMultiAIn;
-    dsp2::Levelmeter peakMeterMultiBIn;
+    dsp2::LevelLed flInLed;
+    dsp2::LevelLed frInLed;
+    dsp2::LevelLed slInLed;
+    dsp2::LevelLed srInLed;
+    dsp2::LevelLed ltOutLed;
+    dsp2::LevelLed rtOutLed;
+    dsp2::LevelLed multiAInLed;
+    dsp2::LevelLed multiBInLed;
     // matrix mixing
     enum Encoders {
         QS_ENCODE,
@@ -107,6 +107,18 @@ struct Quad_Encoder : Module {
 		configOutput(RT_OUT, "RT OUT");
         onReset();
         onSampleRateChange();
+        ltFlMix = 0.0;
+        ltFrMix = 0.0;
+        ltSlMix = 0.0;  // normal
+        ltSrMix = 0.0;  // normal
+        ltSlShiftMix = 0.0;  // shift
+        ltSrShiftMix = 0.0;  // shift
+        rtFlMix = 0.0;
+        rtFrMix = 0.0;
+        rtSlMix = 0.0;  // normal
+        rtSrMix = 0.0;  // normal
+        rtSlShiftMix = 0.0;  // shift
+        rtSrShiftMix = 0.0;  // shift
 	}
 
     // process a sample
@@ -117,14 +129,14 @@ struct Quad_Encoder : Module {
 
         // run tasks
         if(taskTimer.process()) {
-            lights[FL_IN_LED].setBrightness(peakMeterFlIn.getLevel());
-            lights[FR_IN_LED].setBrightness(peakMeterFrIn.getLevel());
-            lights[SL_IN_LED].setBrightness(peakMeterSlIn.getLevel());
-            lights[SR_IN_LED].setBrightness(peakMeterSrIn.getLevel());
-            lights[MULTI_A_IN_LED + 2].setBrightness(peakMeterMultiAIn.getLevel());
-            lights[MULTI_B_IN_LED + 2].setBrightness(peakMeterMultiBIn.getLevel());
-            lights[LT_OUT_LED].setBrightness(peakMeterLtOut.getLevel());
-            lights[RT_OUT_LED].setBrightness(peakMeterRtOut.getLevel());
+            lights[FL_IN_LED].setBrightness(flInLed.getBrightness());
+            lights[FR_IN_LED].setBrightness(frInLed.getBrightness());
+            lights[SL_IN_LED].setBrightness(slInLed.getBrightness());
+            lights[SR_IN_LED].setBrightness(srInLed.getBrightness());
+            lights[MULTI_A_IN_LED + 2].setBrightness(multiAInLed.getBrightness());
+            lights[MULTI_B_IN_LED + 2].setBrightness(multiBInLed.getBrightness());
+            lights[LT_OUT_LED].setBrightness(ltOutLed.getBrightness());
+            lights[RT_OUT_LED].setBrightness(rtOutLed.getBrightness());
 
             // matrix coeffs
             if(matrixMode != (int)params[MODE].getValue()) {
@@ -206,9 +218,9 @@ struct Quad_Encoder : Module {
         tempf = inputs[MULTI_B_IN].getPolyVoltage(0);
         multiSumB = tempf;
         fl += tempf;
+        fl *= AUDIO_IN_GAIN;  // normalize level
         fl = hpfFl.process(fl);
-        fl *= AUDIO_IN_GAIN;
-        peakMeterFlIn.update(fl);
+        flInLed.updateNormalized(fl);
 
         fr = inputs[FR_IN].getVoltage();
         tempf = inputs[MULTI_A_IN].getPolyVoltage(1);
@@ -217,9 +229,9 @@ struct Quad_Encoder : Module {
         tempf = inputs[MULTI_B_IN].getPolyVoltage(1);
         multiSumB += tempf;
         fr += tempf;
+        fr *= AUDIO_IN_GAIN;  // normalize level
         fr = hpfFr.process(fr);
-        fr *= AUDIO_IN_GAIN;
-        peakMeterFrIn.update(fr);
+        frInLed.updateNormalized(fr);
 
         sl = inputs[SL_IN].getVoltage();
         tempf = inputs[MULTI_A_IN].getPolyVoltage(2);
@@ -228,9 +240,9 @@ struct Quad_Encoder : Module {
         tempf = inputs[MULTI_B_IN].getPolyVoltage(2);
         multiSumB += tempf;
         sl += tempf;
+        sl *= AUDIO_IN_GAIN;  // normalize level
         sl = hpfSl.process(sl);
-        sl *= AUDIO_IN_GAIN;
-        peakMeterSlIn.update(sl);
+        slInLed.updateNormalized(sl);
 
         sr = inputs[SR_IN].getVoltage();
         tempf = inputs[MULTI_A_IN].getPolyVoltage(3);
@@ -239,14 +251,14 @@ struct Quad_Encoder : Module {
         tempf = inputs[MULTI_B_IN].getPolyVoltage(3);
         multiSumB += tempf;
         sr += tempf;
+        sr *= AUDIO_IN_GAIN;  // normalize level
         sr = hpfSr.process(sr);
-        sr *= AUDIO_IN_GAIN;
-        peakMeterSrIn.update(sr);
+        srInLed.updateNormalized(sr);
 
-        multiSumA = hpfMultiA.process(multiSumA * AUDIO_IN_GAIN * 0.25f);
-        peakMeterMultiAIn.update(multiSumA);
-        multiSumB = hpfMultiB.process(multiSumB * AUDIO_IN_GAIN * 0.25f);
-        peakMeterMultiBIn.update(multiSumB);
+        multiSumA = hpfMultiA.process(multiSumA * 0.25f);
+        multiAInLed.update(multiSumA);
+        multiSumB = hpfMultiB.process(multiSumB * 0.25f);
+        multiBInLed.update(multiSumB);
 
         // matrix encoding
         flShifter.process(fl, &flDel, &flShift);
@@ -261,7 +273,7 @@ struct Quad_Encoder : Module {
             (srDel * ltSrMix) +
             (srShift * ltSrShiftMix)) * params[OUTPUT_POT].getValue();
         outputs[LT_OUT].setVoltage(tempf * AUDIO_OUT_GAIN);
-        peakMeterLtOut.update(tempf);
+        ltOutLed.updateNormalized(tempf);
 
         tempf = ((flDel * rtFlMix) +
             (frDel * rtFrMix) +
@@ -270,7 +282,7 @@ struct Quad_Encoder : Module {
             (srDel * rtSrMix) +
             (srShift * rtSrShiftMix)) * params[OUTPUT_POT].getValue();
         outputs[RT_OUT].setVoltage(tempf * AUDIO_OUT_GAIN);
-        peakMeterRtOut.update(tempf);
+        rtOutLed.updateNormalized(tempf);
 	}
 
     // samplerate changed
@@ -282,20 +294,14 @@ struct Quad_Encoder : Module {
         hpfSr.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
         hpfMultiA.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
         hpfMultiB.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
-        peakMeterFlIn.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterFrIn.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterSlIn.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterSrIn.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterLtOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterRtOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterFlIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterFrIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterSlIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterSrIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterMultiAIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterMultiBIn.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterLtOut.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
-        peakMeterRtOut.setPeakHoldTime(PEAK_METER_PEAK_HOLD_TIME, APP->engine->getSampleRate());
+        flInLed.onSampleRateChange();
+        frInLed.onSampleRateChange();
+        slInLed.onSampleRateChange();
+        srInLed.onSampleRateChange();
+        ltOutLed.onSampleRateChange();
+        rtOutLed.onSampleRateChange();
+        multiAInLed.onSampleRateChange();
+        multiBInLed.onSampleRateChange();
     }
 
     // module initialize

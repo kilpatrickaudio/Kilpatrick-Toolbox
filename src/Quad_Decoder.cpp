@@ -29,6 +29,7 @@
 struct Quad_Decoder : Module {
 	enum ParamId {
 		OUTPUT_POT,
+        FS_POT,
         MODE,  // selected mode index
 		PARAMS_LEN
 	};
@@ -42,6 +43,7 @@ struct Quad_Decoder : Module {
 		FR_OUT,
 		SL_OUT,
 		SR_OUT,
+        SUB_OUT,
 		MULTI_OUT,
 		OUTPUTS_LEN
 	};
@@ -52,35 +54,38 @@ struct Quad_Decoder : Module {
 		FR_OUT_LED,
 		SL_OUT_LED,
 		SR_OUT_LED,
+        SUB_OUT_LED,
         ENUMS(MULTI_OUT_LED, 3),
 		LIGHTS_LEN
 	};
+    static constexpr int AUDIO_BUFLEN = 64;
     static constexpr int RT_TASK_RATE = 100;
     dsp::ClockDivider taskTimer;
     static constexpr float AUDIO_IN_GAIN = 0.1f;
     static constexpr float AUDIO_OUT_GAIN = 10.0f;  // save mixing headroom
-    static constexpr float PEAK_METER_SMOOTHING = 10.0f;
-    static constexpr float PEAK_METER_PEAK_HOLD_TIME = 0.1f;
-    dsp2::Levelmeter peakMeterLtIn;
-    dsp2::Levelmeter peakMeterRtIn;
-    dsp2::Levelmeter peakMeterFlOut;
-    dsp2::Levelmeter peakMeterFrOut;
-    dsp2::Levelmeter peakMeterSlOut;
-    dsp2::Levelmeter peakMeterSrOut;
-    dsp2::Levelmeter peakMeterMultOut;
+    dsp2::LevelLed ltInLed;
+    dsp2::LevelLed rtInLed;
+    dsp2::LevelLed flOutLed;
+    dsp2::LevelLed frOutLed;
+    dsp2::LevelLed slOutLed;
+    dsp2::LevelLed srOutLed;
+    dsp2::LevelLed subOutLed;
+    dsp2::LevelLed multiOutLed;
     // matrix mixing
     enum Encoders {
-        QS_ENCODE,
-        SQ_BASIC_ENCODE,
-        SQ_MOD_ENCODE,
+        QS_MATRIX_DECODE,
+        QS_LOGIC_DECODE,
+        SQ_MATRIX_DECODE,
+        SQ_LOGIC_DECODE,
         NUM_ENCODERS
     };
-    int matrixMode;
+    dsp2::AudioBufferer *inBuf, *outBuf;
 
     // constructor
 	Quad_Decoder() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configParam(OUTPUT_POT, 0.f, 1.f, 0.5f, "OUTPUT LEVEL");
+        configParam(FS_POT, 0.f, 1.f, 0.5f, "FS BALANCE");
         configParam(MODE, 0.f, NUM_ENCODERS - 1, 0.0f, "MODE");
 		configInput(LT_IN, "LT IN");
 		configInput(RT_IN, "RT IN");
@@ -88,53 +93,119 @@ struct Quad_Decoder : Module {
 		configOutput(FR_OUT, "FR OUT");
 		configOutput(SL_OUT, "SL OUT");
 		configOutput(SR_OUT, "SR OUT");
+        configOutput(SUB_OUT, "SUB OUT");
 		configOutput(MULTI_OUT, "MULTI OUT");
         onReset();
         onSampleRateChange();
+        inBuf = new dsp2::AudioBufferer(AUDIO_BUFLEN, 2);
+        outBuf = new dsp2::AudioBufferer(AUDIO_BUFLEN, 4);
 	}
+
+    // destructor
+    ~Quad_Decoder() {
+        delete inBuf;
+        delete outBuf;
+    }
 
     // process a sample
 	void process(const ProcessArgs& args) override {
-        float lt, rt;
+        int i;
+        float lt, rt, multiSum;
+        float multiOut[4];
+        float *inp, *outp;
 
         // run tasks
         if(taskTimer.process()) {
-            lights[LT_IN_LED].setBrightness(peakMeterLtIn.getLevel());
-            lights[RT_IN_LED].setBrightness(peakMeterRtIn.getLevel());
-            lights[FL_OUT_LED].setBrightness(peakMeterFlOut.getLevel());
-            lights[FR_OUT_LED].setBrightness(peakMeterFlOut.getLevel());
-            lights[SL_OUT_LED].setBrightness(peakMeterFlOut.getLevel());
-            lights[SR_OUT_LED].setBrightness(peakMeterFlOut.getLevel());
-            lights[MULTI_OUT_LED + 2].setBrightness(peakMeterMultOut.getLevel());
-
+            lights[LT_IN_LED].setBrightness(ltInLed.getBrightness());
+            lights[RT_IN_LED].setBrightness(rtInLed.getBrightness());
+            lights[FL_OUT_LED].setBrightness(flOutLed.getBrightness());
+            lights[FR_OUT_LED].setBrightness(frOutLed.getBrightness());
+            lights[SL_OUT_LED].setBrightness(slOutLed.getBrightness());
+            lights[SR_OUT_LED].setBrightness(srOutLed.getBrightness());
+            lights[SUB_OUT_LED].setBrightness(subOutLed.getBrightness());
+            lights[MULTI_OUT_LED + 2].setBrightness(multiOutLed.getBrightness());
         }
 
-        // get inputs
-        lt = inputs[LT_IN].getVoltage() * AUDIO_IN_GAIN;
-        peakMeterLtIn.update(lt);
+        // process
+        outBuf->isFull();
+        if(inBuf->isFull()) {
+            switch((int)params[MODE].getValue()) {
+                case QS_MATRIX_DECODE:
+                    inp = inBuf->buf;
+                    outp = outBuf->buf;
+                    for(i = 0; i < AUDIO_BUFLEN; i ++) {
+                        // get inputs
+                        lt = *inp;
+                        inp ++;
+                        rt = *inp;
+                        inp ++;
+                        // output
+                        *outp = lt + (rt * 0.414f);  // FL
+                        outp ++;
+                        *outp = rt + (lt * 0.414f);  // FR
+                        outp ++;
+                        *outp = 0.0f;
+                        outp ++;
+                        *outp = 0.0f;
+                        outp ++;
+                    }
+                    break;
+                case QS_LOGIC_DECODE:
+                    break;
+                case SQ_MATRIX_DECODE:
+                    break;
+                case SQ_LOGIC_DECODE:
+                    break;
+                default:
+                    break;
+            }
+        }
 
+        // shuffle inputs and outputs
+        lt = inputs[LT_IN].getVoltage() * AUDIO_IN_GAIN;
+        ltInLed.updateNormalized(lt);
         rt = inputs[RT_IN].getVoltage() * AUDIO_IN_GAIN;
-        peakMeterRtIn.update(rt);
+        rtInLed.updateNormalized(rt);
+        inBuf->addInSample(lt);
+        inBuf->addInSample(rt);
+        multiOut[0] = outBuf->getOutSample() * AUDIO_OUT_GAIN;  // FL
+        multiOut[1] = outBuf->getOutSample() * AUDIO_OUT_GAIN;  // FR
+        multiOut[2] = outBuf->getOutSample() * AUDIO_OUT_GAIN;  // SL
+        multiOut[3] = outBuf->getOutSample() * AUDIO_OUT_GAIN;  // SR
+        outputs[FL_OUT].setVoltage(multiOut[0]);
+        outputs[FR_OUT].setVoltage(multiOut[1]);
+        outputs[SL_OUT].setVoltage(multiOut[2]);
+        outputs[SR_OUT].setVoltage(multiOut[3]);
+        outputs[MULTI_OUT].writeVoltages(multiOut);
+        flOutLed.update(multiOut[0]);
+        frOutLed.update(multiOut[1]);
+        slOutLed.update(multiOut[2]);
+        srOutLed.update(multiOut[3]);
+        multiSum = multiOut[0];
+        multiSum += multiOut[1];
+        multiSum += multiOut[2];
+        multiSum += multiOut[3];
+        multiOutLed.update(multiSum * 0.25f);
 	}
 
     // samplerate changed
     void onSampleRateChange(void) override {
         taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
-        peakMeterLtIn.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterRtIn.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterFlOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterFrOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterSlOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterSrOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterMultOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
+        ltInLed.onSampleRateChange();
+        rtInLed.onSampleRateChange();
+        flOutLed.onSampleRateChange();
+        frOutLed.onSampleRateChange();
+        slOutLed.onSampleRateChange();
+        srOutLed.onSampleRateChange();
+        subOutLed.onSampleRateChange();
+        multiOutLed.onSampleRateChange();
     }
 
     // module initialize
     void onReset(void) override {
         lights[MULTI_OUT_LED + 0].setBrightness(0.0f);
         lights[MULTI_OUT_LED + 1].setBrightness(0.0f);
-        matrixMode = -1;  // force refresh
-        params[MODE].setValue(QS_ENCODE);
+        params[MODE].setValue(QS_MATRIX_DECODE);
     }
 
     // gets the mode
@@ -175,23 +246,26 @@ struct Quad_DecoderWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
 		addParam(createParamCentered<KilpatrickKnobBlackRed>(mm2px(Vec(15.24, 24.5)), module, Quad_Decoder::OUTPUT_POT));
+        addParam(createParamCentered<KilpatrickKnobBlackRed>(mm2px(Vec(15.24, 42.5)), module, Quad_Decoder::FS_POT));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.24, 44.5)), module, Quad_Decoder::LT_IN));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(22.24, 44.5)), module, Quad_Decoder::RT_IN));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(8.24, 62.5)), module, Quad_Decoder::LT_IN));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(22.24, 62.5)), module, Quad_Decoder::RT_IN));
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.24, 78.5)), module, Quad_Decoder::FL_OUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(22.24, 78.5)), module, Quad_Decoder::FR_OUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.24, 94.5)), module, Quad_Decoder::SL_OUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(22.24, 94.5)), module, Quad_Decoder::SR_OUT));
-		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(15.24, 110.5)), module, Quad_Decoder::MULTI_OUT));
+        addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(8.24, 110.5)), module, Quad_Decoder::SUB_OUT));
+		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(22.24, 110.5)), module, Quad_Decoder::MULTI_OUT));
 
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(12.74, 39.208)), module, Quad_Decoder::LT_IN_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(17.74, 39.208)), module, Quad_Decoder::RT_IN_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(12.74, 57.208)), module, Quad_Decoder::LT_IN_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(17.74, 57.208)), module, Quad_Decoder::RT_IN_LED));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(12.74, 73.208)), module, Quad_Decoder::FL_OUT_LED));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(17.74, 73.208)), module, Quad_Decoder::FR_OUT_LED));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(12.74, 89.208)), module, Quad_Decoder::SL_OUT_LED));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(17.74, 89.208)), module, Quad_Decoder::SR_OUT_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(24.236, 110.5)), module, Quad_Decoder::MULTI_OUT_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(12.74, 105.208)), module, Quad_Decoder::SUB_OUT_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(17.74, 105.208)), module, Quad_Decoder::MULTI_OUT_LED));
 	}
 
     // add menu items to select which memory slot we use
@@ -204,9 +278,10 @@ struct Quad_DecoderWidget : ModuleWidget {
         // mode
         menuHelperAddSpacer(menu);
         menuHelperAddLabel(menu, "Decoding Mode");
-        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::QS_ENCODE, "QS / Quark Encode"));
-        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_BASIC_ENCODE, "SQ Basic Encode"));
-        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_MOD_ENCODE, "SQ Modified Encode"));
+        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::QS_MATRIX_DECODE, "QS / Quark Matrix Decode"));
+        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::QS_LOGIC_DECODE, "QS / Quark Logic Decode"));
+        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_MATRIX_DECODE, "SQ Matrix Decode"));
+        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_LOGIC_DECODE, "SQ Logic Decode"));
     }
 };
 

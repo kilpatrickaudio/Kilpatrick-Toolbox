@@ -59,9 +59,6 @@ struct Quad_Panner : Module, KilpatrickJoystickHandler {
 
     static constexpr int RT_TASK_RATE = 1000;
     static constexpr float CV_IN_SCALE = 0.2;  // -5V to +5V
-    static constexpr float PEAK_METER_SMOOTHING = 10.0f;
-    static constexpr float PEAK_METER_PEAK_HOLD_TIME = 0.1f;
-    static constexpr float AUDIO_IN_GAIN = 0.1f;
     dsp::ClockDivider taskTimer;
     float sumPosX, sumPosY;  // -1.0 to +1.0
     float joyPosX, joyPosY;  // -1.0 to +1.0
@@ -73,11 +70,10 @@ struct Quad_Panner : Module, KilpatrickJoystickHandler {
     float vcaFR;  // front right VCA level
     float vcaSL;  // surround left VCA level
     float vcaSR;  // surround right VCA level
-    float multiOut[4];
-    dsp2::Levelmeter peakMeterFlOut;
-    dsp2::Levelmeter peakMeterFrOut;
-    dsp2::Levelmeter peakMeterSlOut;
-    dsp2::Levelmeter peakMeterSrOut;
+    dsp2::LevelLed flOutLed;
+    dsp2::LevelLed frOutLed;
+    dsp2::LevelLed slOutLed;
+    dsp2::LevelLed srOutLed;
 
     // constructor
 	Quad_Panner() {
@@ -93,15 +89,12 @@ struct Quad_Panner : Module, KilpatrickJoystickHandler {
 		configOutput(MULTI_OUT, "MULTI OUT");
         onReset();
         onSampleRateChange();
-        multiOut[0] = 0.0;
-        multiOut[1] = 0.0;
-        multiOut[2] = 0.0;
-        multiOut[3] = 0.0;
 	}
 
     // process a sample
 	void process(const ProcessArgs& args) override {
         float tempf;
+        float multiOut[4];
 
         // run tasks
         if(taskTimer.process()) {
@@ -136,10 +129,10 @@ struct Quad_Panner : Module, KilpatrickJoystickHandler {
             lights[SR_CV_LED].setBrightness(vcaSR);
 
             // signal LEDs
-            lights[FL_OUT_LED].setBrightness(peakMeterFlOut.getLevel());
-            lights[FR_OUT_LED].setBrightness(peakMeterFrOut.getLevel());
-            lights[SL_OUT_LED].setBrightness(peakMeterSlOut.getLevel());
-            lights[SR_OUT_LED].setBrightness(peakMeterSrOut.getLevel());
+            lights[FL_OUT_LED].setBrightness(flOutLed.getBrightness());
+            lights[FR_OUT_LED].setBrightness(frOutLed.getBrightness());
+            lights[SL_OUT_LED].setBrightness(slOutLed.getBrightness());
+            lights[SR_OUT_LED].setBrightness(srOutLed.getBrightness());
         }
 
         // VCAs
@@ -152,19 +145,19 @@ struct Quad_Panner : Module, KilpatrickJoystickHandler {
         outputs[SL_OUT].setVoltage(multiOut[2]);
         outputs[SR_OUT].setVoltage(multiOut[3]);
         outputs[MULTI_OUT].writeVoltages(multiOut);
-        peakMeterFlOut.update(multiOut[0] * AUDIO_IN_GAIN);
-        peakMeterFrOut.update(multiOut[1] * AUDIO_IN_GAIN);
-        peakMeterSlOut.update(multiOut[2] * AUDIO_IN_GAIN);
-        peakMeterSrOut.update(multiOut[3] * AUDIO_IN_GAIN);
+        flOutLed.update(multiOut[0]);
+        frOutLed.update(multiOut[1]);
+        slOutLed.update(multiOut[2]);
+        srOutLed.update(multiOut[3]);
 	}
 
     // samplerate changed
     void onSampleRateChange(void) override {
         taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
-        peakMeterFlOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterFrOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterSlOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
-        peakMeterSrOut.setSmoothingFreq(PEAK_METER_SMOOTHING, APP->engine->getSampleRate());
+        flOutLed.onSampleRateChange();
+        frOutLed.onSampleRateChange();
+        slOutLed.onSampleRateChange();
+        srOutLed.onSampleRateChange();
     }
 
     // module initialize

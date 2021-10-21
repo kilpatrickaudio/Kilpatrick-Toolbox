@@ -126,15 +126,15 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
 	void process(const ProcessArgs& args) override {
         float in1, in2;
         // get channel 1-2 (we need the for other functions than just metering)
-        in1 = (inputs[MULTI_IN].getPolyVoltage(0) + inputs[IN_L].getVoltage()) * AUDIO_IN_GAIN;
-        in2 = (inputs[MULTI_IN].getPolyVoltage(1) + inputs[IN_R].getVoltage()) * AUDIO_IN_GAIN;
+        in1 = dsp2::clamp((inputs[MULTI_IN].getPolyVoltage(0) + inputs[IN_L].getVoltage()) * AUDIO_IN_GAIN);
+        in2 = dsp2::clamp((inputs[MULTI_IN].getPolyVoltage(1) + inputs[IN_R].getVoltage()) * AUDIO_IN_GAIN);
         meterProc[0].update(in1);
         meterProc[1].update(in2);
         xyBuf.push(Vec(in1, in2));
 
         // get channel 3-16
         for(int i = 2; i < inputs[MULTI_IN].getChannels(); i ++) {
-            meterProc[i].update(inputs[MULTI_IN].getPolyVoltage(i) * AUDIO_IN_GAIN);
+            meterProc[i].update(dsp2::clamp(inputs[MULTI_IN].getPolyVoltage(i) * AUDIO_IN_GAIN));
         }
         for(int i = inputs[MULTI_IN].getChannels(); i < MAX_CHANNELS; i ++) {
             meterProc[i].update(0.0f);
