@@ -64,6 +64,13 @@ struct MIDI_Merger : Module {
 	MIDI_Merger() {
         int port;
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
+        configInput(MIDI_IN1, "MIDI IN1");
+        configInput(MIDI_IN2, "MIDI IN2");
+        configInput(MIDI_IN3, "MIDI IN3");
+        configInput(MIDI_IN4, "MIDI IN4");
+        configOutput(MIDI_OUT1, "CHN OUT");
+        configOutput(MIDI_OUT2, "SYS OUT");
+        configOutput(MIDI_OUT3, "ALL OUT");
         for(port = 0; port < NUM_INPUTS; port ++) {
             cvMidiIns[port] = new CVMidi(&inputs[MIDI_IN1 + port], 1);
         }

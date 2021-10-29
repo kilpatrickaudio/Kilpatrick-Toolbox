@@ -107,6 +107,10 @@ struct MIDI_CV : Module {
         configParam(MAP_CHAN1, 0.0f, 127.0f, 0.0f, "CHAN1");
         configParam(MAP_CHAN2, 0.0f, 127.0f, 0.0f, "CHAN2");
         configParam(MAP_CHAN3, 0.0f, 127.0f, 0.0f, "CHAN3");
+        configInput(MIDI_IN, "MIDI IN");
+        configOutput(P1_OUT, "P1 OUT");
+        configOutput(G2_OUT, "G2 OUT");
+        configOutput(V3_OUT, "V3 OUT");
         cvMidiIn = new CVMidi(&inputs[MIDI_IN], 1);
         ccMem.setTimeout(MIDI_RT_TASK_RATE * 2);  // 2 seconds
         timerDiv = 0;

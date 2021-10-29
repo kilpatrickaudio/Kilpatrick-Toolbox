@@ -74,8 +74,7 @@ struct Quad_Encoder : Module {
     // matrix mixing
     enum Encoders {
         QS_ENCODE,
-        SQ_BASIC_ENCODE,
-        SQ_MOD_ENCODE,
+        SQ_ENCODE,
         NUM_ENCODERS
     };
     dsp2::AllpassPhaseShifter flShifter;
@@ -158,36 +157,20 @@ struct Quad_Encoder : Module {
                         rtSlShiftMix = -0.38;  // shift
                         rtSrShiftMix = -0.92;  // shift
                         break;
-                    case SQ_BASIC_ENCODE:  // SQ basic encode
-                        // left total
-                        ltFlMix = 1.0;
-                        ltFrMix = 0.0;
-                        ltSlMix = 0.0;  // normal
-                        ltSrMix = 0.7;  // normal
-                        ltSlShiftMix = -0.7;  // shift
-                        ltSrShiftMix = 0.0;  // shift
-                        // right total
-                        rtFlMix = 0.0;
-                        rtFrMix = 1.0;
-                        rtSlMix = -0.7;  // normal
-                        rtSrMix = 0.0;  // normal
-                        rtSlShiftMix = 0.0;  // shift
-                        rtSrShiftMix = 0.7;  // shift
-                        break;
-                    case SQ_MOD_ENCODE:  // SQ modified encode
+                    case SQ_ENCODE:  // SQ encode (modified version)
                         // left total
                         ltFlMix = 1.0;
                         ltFrMix = 0.0;
                         ltSlMix = 0.7;  // normal
                         ltSrMix = 0.0;  // normal
                         ltSlShiftMix = 0.0;  // shift
-                        ltSrShiftMix = -0.7;  // shift
+                        ltSrShiftMix = 0.7;  // shift
                         // right total
                         rtFlMix = 0.0;
                         rtFrMix = 1.0;
                         rtSlMix = 0.0;  // normal
                         rtSrMix = 0.7;  // normal
-                        rtSlShiftMix = -0.7;  // shift
+                        rtSlShiftMix = 0.7;  // shift
                         rtSrShiftMix = 0.0;  // shift
                         break;
                     default:
@@ -385,8 +368,7 @@ struct Quad_EncoderWidget : ModuleWidget {
         menuHelperAddSpacer(menu);
         menuHelperAddLabel(menu, "Encoding Mode");
         menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::QS_ENCODE, "QS / Quark Encode"));
-        menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::SQ_BASIC_ENCODE, "SQ Basic Encode"));
-        menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::SQ_MOD_ENCODE, "SQ Modified Encode"));
+        menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::SQ_ENCODE, "SQ Encode (Modified)"));
     }
 };
 

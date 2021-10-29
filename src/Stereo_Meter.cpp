@@ -66,6 +66,8 @@ struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
         configParam(REF_LEVEL_L, -60.0f, 24.0f, 0.0f, "REF LEVEL L");
         configParam(REF_LEVEL_R, -60.0f, 24.0f, 0.0f, "REF LEVEL R");
+        configInput(IN_L, "IN L");
+        configInput(IN_R, "IN R");
         onReset();
         onSampleRateChange();
         meterProcL.useHighpass = 1;

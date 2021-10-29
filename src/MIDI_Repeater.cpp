@@ -84,6 +84,12 @@ struct MIDI_Repeater : Module {
         int port;
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
 		configParam(MODE_SW, 0.0f, 2.0f, 0.0f, "MODE");
+        configInput(MIDI_IN1, "MIDI IN1");
+        configInput(MIDI_IN2, "MIDI IN2");
+        configInput(MIDI_IN3, "MIDI IN3");
+        configOutput(MIDI_OUT1, "MIDI OUT1");
+        configOutput(MIDI_OUT2, "MIDI OUT2");
+        configOutput(MIDI_OUT3, "MIDI OUT3");
 
         for(port = 0; port < NUM_PORTS; port ++) {
             cvMidiIns[port] = new CVMidi(&inputs[MIDI_IN1 + port], 1);

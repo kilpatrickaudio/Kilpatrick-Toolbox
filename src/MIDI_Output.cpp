@@ -50,6 +50,7 @@ struct MIDI_Output : Module, KilpatrickLabelHandler {
     // constructor
 	MIDI_Output() {
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
+        configInput(MIDI_IN, "MIDI IN");
         cvMidiIn = new CVMidi(&inputs[MIDI_IN], 1);
         midi = new MidiHelper(0, 1, 1);
         midi->setCombinedInOutMode(0);

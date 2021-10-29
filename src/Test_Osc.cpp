@@ -150,6 +150,8 @@ struct Test_Osc : Module, TestOscDisplaySource {
         configParam(ABS_LEVEL, 0.000015848931924611107f, 1.0f, 0.1f, "ABS LEVEL");
         configParam(REF_LEVEL, 0.001f, 1000.0f, 1.0f, "REF LEVEL");
         configParam(SPEED, 0.1f, 60.0f, 1.0f, "SPEED");
+        configInput(TRIG_IN, "TRIG IN");
+        configOutput(OUT, "OUT");
         onReset();
         onSampleRateChange();
         freqChange.changeAmount = 0.1f;

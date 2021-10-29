@@ -79,6 +79,10 @@ struct Quad_Decoder : Module {
         SQ_LOGIC_DECODE,
         NUM_ENCODERS
     };
+    dsp2::AllpassPhaseShifter flShifter;
+    dsp2::AllpassPhaseShifter frShifter;
+    dsp2::AllpassPhaseShifter slShifter;
+    dsp2::AllpassPhaseShifter srShifter;
     dsp2::AudioBufferer *inBuf, *outBuf;
 
     // constructor
@@ -113,9 +117,16 @@ struct Quad_Decoder : Module {
         float lt, rt, multiSum;
         float multiOut[4];
         float *inp, *outp;
+        float fl, fr, sl, sr;
+        float flDel, flShift, frDel, frShift;
+        float slDel, slShift, srDel, srShift;
 
         // run tasks
         if(taskTimer.process()) {
+            // set multi output channels to 4
+            if(outputs[MULTI_OUT].isConnected() && outputs[MULTI_OUT].getChannels() != 4) {
+                outputs[MULTI_OUT].setChannels(4);
+            }
             lights[LT_IN_LED].setBrightness(ltInLed.getBrightness());
             lights[RT_IN_LED].setBrightness(rtInLed.getBrightness());
             lights[FL_OUT_LED].setBrightness(flOutLed.getBrightness());
@@ -134,25 +145,63 @@ struct Quad_Decoder : Module {
                     inp = inBuf->buf;
                     outp = outBuf->buf;
                     for(i = 0; i < AUDIO_BUFLEN; i ++) {
-                        // get inputs
+                        // inputs
                         lt = *inp;
                         inp ++;
                         rt = *inp;
                         inp ++;
-                        // output
-                        *outp = lt + (rt * 0.414f);  // FL
+
+                        // matrix
+                        fl = lt + (rt * 0.414f);
+                        fr = rt + (lt * 0.414f);
+                        sl = lt + (rt * -0.414f);
+                        sr = -rt + (lt * 0.414f);
+
+                        // phase shifters
+                        flShifter.process(fl, &flDel, &flShift);
+                        frShifter.process(fr, &frDel, &frShift);
+                        slShifter.process(sl, &slDel, &slShift);
+                        srShifter.process(sr, &srDel, &srShift);
+
+                        *outp = flDel;  // FL
                         outp ++;
-                        *outp = rt + (lt * 0.414f);  // FR
+                        *outp = frDel;  // FR
                         outp ++;
-                        *outp = 0.0f;
+                        *outp = slShift;  // SL
                         outp ++;
-                        *outp = 0.0f;
+                        *outp = srShift;  // SR
                         outp ++;
                     }
                     break;
                 case QS_LOGIC_DECODE:
                     break;
                 case SQ_MATRIX_DECODE:
+                    inp = inBuf->buf;
+                    outp = outBuf->buf;
+                    for(i = 0; i < AUDIO_BUFLEN; i ++) {
+                        // inputs
+                        lt = *inp;
+                        inp ++;
+                        rt = *inp;
+                        inp ++;
+
+                        // phase shifters
+                        flShifter.process(lt, &flDel, &flShift);
+                        frShifter.process(rt, &frDel, &frShift);
+
+                        // matrix
+                        *outp = flDel;  // FL
+                        outp ++;
+                        *outp = frDel;  // FR
+                        outp ++;
+
+                        // midimagic
+                        // no front/back separation
+                        *outp = (flShift * -0.707f) - (frDel * 0.707f);  // SL
+                        outp ++;
+                        *outp = (flDel * 0.707f) - (frShift * -0.707f);  // SR
+                        outp ++;
+                    }
                     break;
                 case SQ_LOGIC_DECODE:
                     break;

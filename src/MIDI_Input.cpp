@@ -56,6 +56,9 @@ struct MIDI_Input : Module, KilpatrickLabelHandler {
 	MIDI_Input() {
         int port;
 		config(NUM_PARAMS, NUM_INPUTS, NUM_OUTPUTS, NUM_LIGHTS);
+        configOutput(MIDI_OUT1, "CHN OUT");
+        configOutput(MIDI_OUT2, "SYS OUT");
+        configOutput(MIDI_OUT3, "ALL OUT");
         for(port = 0; port < NUM_OUTPUTS; port ++) {
             cvMidiOuts[port] = new CVMidi(&outputs[MIDI_OUT1 + port], 0);
         }

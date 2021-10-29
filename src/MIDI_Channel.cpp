@@ -73,6 +73,9 @@ struct MIDI_Channel : Module, KilpatrickLabelHandler {
         configParam(KEY_TRANS, -24.0f, 24.0f, 0.0f, "KEY TRANS");
         configParam(KEY_SPLIT, 36.0f, 84.0f, 60.0f, "KEY SPLIT");
         configParam(KEY_SPLIT_ENABLE, 0.0f, 1.0f, 0.0f, "KEY SPLIT ENABLE");
+        configInput(MIDI_IN, "MIDI IN");
+        configOutput(MIDI_OUT_L, "MIDI OUT L");
+        configOutput(MIDI_OUT_R, "MIDI OUT R");
         cvMidiIn = new CVMidi(&inputs[MIDI_IN], 1);
         cvMidiOut[MIDI_OUT_L] = new CVMidi(&outputs[MIDI_OUT_L], 0);
         cvMidiOut[MIDI_OUT_R] = new CVMidi(&outputs[MIDI_OUT_R], 0);

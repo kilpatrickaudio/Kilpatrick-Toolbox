@@ -73,6 +73,10 @@ struct MIDI_Monitor : Module, KilpatrickLabelHandler {
 		configParam(MIDI_IN2_SW, 0.f, 1.f, 0.f, "MIDI IN2");
 		configParam(MIDI_IN3_SW, 0.f, 1.f, 0.f, "MIDI IN3");
 		configParam(MIDI_IN4_SW, 0.f, 1.f, 0.f, "MIDI IN4");
+        configInput(MIDI_IN1, "MIDI IN1");
+        configInput(MIDI_IN2, "MIDI IN2");
+        configInput(MIDI_IN3, "MIDI IN3");
+        configInput(MIDI_IN4, "MIDI IN4");
         for(port = 0; port < NUM_INPUTS; port ++) {
             cvMidi[port] = new CVMidi(&inputs[MIDI_IN1 + port], 1);
         }

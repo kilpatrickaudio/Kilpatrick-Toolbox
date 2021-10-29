@@ -91,6 +91,8 @@ struct MIDI_Mapper : Module, KilpatrickLabelHandler {
         configParam(MAP_CC_OUT4, 0.0f, 255.0f, 0.0f, "CC_OUT4");
         configParam(MAP_CC_OUT5, 0.0f, 255.0f, 0.0f, "CC_OUT5");
         configParam(MAP_CC_OUT6, 0.0f, 255.0f, 0.0f, "CC_OUT6");
+        configInput(MIDI_IN, "MIDI IN");
+        configOutput(MIDI_OUT, "MIDI OUT");
         cvMidiIn = new CVMidi(&inputs[MIDI_IN], 1);
         cvMidiOut = new CVMidi(&outputs[MIDI_OUT], 0);
         ccMem.setTimeout(MIDI_RT_TASK_RATE * 2);  // 2 seconds
