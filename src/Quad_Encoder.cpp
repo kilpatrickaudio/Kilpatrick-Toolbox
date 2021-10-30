@@ -139,6 +139,8 @@ struct Quad_Encoder : Module {
             switch((int)params[MODE].getValue()) {
                 case QS_ENCODE:
                     for(i = 0; i < AUDIO_BUFLEN; i ++) {
+                        // QS encode (AES paper)
+                        // confirmed identical to Quark output
                         // inputs
                         fl = *inp;
                         inp ++;
@@ -164,6 +166,8 @@ struct Quad_Encoder : Module {
                     break;
                 case SQ_ENCODE:
                     for(i = 0; i < AUDIO_BUFLEN; i ++) {
+                        // SQ basic encode (wikipedia)
+                        // seems to work correctly with Sony SQD-2050
                         // inputs
                         fl = *inp;
                         inp ++;
@@ -181,23 +185,11 @@ struct Quad_Encoder : Module {
                         srShifter.process(sr, &srDel, &srShift);
 
                         // outputs
-                        // SQ basic encode (wikipedia)
                         *outp = flDel + (-slShift * 0.707f) + (srDel * 0.707f);
                         outp ++;
                         *outp = frDel + (-slDel * 0.707f) + (srShift * 0.707f);
                         outp ++;
 
-/*
-                        // CBS patent fig. 7
-                        *outp = ((flDel + flShift) * 0.7f) +  // +45deg. FL
-                            (slDel * 0.707f) +  // SL in phase
-                            (srShift * 0.707f);  // SR +90deg.
-                        outp ++;
-                        *outp = ((frDel + frShift) * 0.7f) +  // +45deg. FR
-                            (srDel * 0.707f) +  // SR in phase
-                            (slShift * 0.707f);  // SL +90deg.
-                        outp ++;
-*/                        
                     }
                     break;
             }
@@ -366,7 +358,7 @@ struct Quad_EncoderWidget : ModuleWidget {
         menuHelperAddSpacer(menu);
         menuHelperAddLabel(menu, "Encoding Mode");
         menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::QS_ENCODE, "QS / Quark Encode"));
-        menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::SQ_ENCODE, "SQ Encode (Experimental)"));
+        menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::SQ_ENCODE, "SQ Encode"));
     }
 };
 
