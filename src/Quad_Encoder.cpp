@@ -141,37 +141,39 @@ struct Quad_Encoder : Module {
             if(matrixMode != (int)params[MODE].getValue()) {
                 matrixMode = (int)params[MODE].getValue();
                 switch(matrixMode) {
-                    case QS_ENCODE:  // QS encode
+                    case QS_ENCODE:  // QS encode (AES paper)
+                        // confirmed to match the output of Quark plugin
                         // left total
-                        ltFlMix = 0.92;
-                        ltFrMix = 0.38;
-                        ltSlMix = 0.0;  // normal
-                        ltSrMix = 0.0;  // normal
-                        ltSlShiftMix = 0.92;  // shift
-                        ltSrShiftMix = 0.38;  // shift
+                        ltFlMix = 1.0f;
+                        ltFrMix = 0.414f;
+                        ltSlMix = 0.0f;  // normal
+                        ltSrMix = 0.0f;  // normal
+                        ltSlShiftMix = 1.0f;  // +90deg. shift
+                        ltSrShiftMix = 0.414f;  // +90deg. shift
                         // right total
-                        rtFlMix = 0.38;
-                        rtFrMix = 0.92;
+                        rtFlMix = 0.414f;
+                        rtFrMix = 1.0f;
                         rtSlMix = 0.0;  // normal
                         rtSrMix = 0.0;  // normal
-                        rtSlShiftMix = -0.38;  // shift
-                        rtSrShiftMix = -0.92;  // shift
+                        rtSlShiftMix = -0.414f;  // +90deg. shift
+                        rtSrShiftMix = -1.0f;  // +90deg. shift
                         break;
-                    case SQ_ENCODE:  // SQ encode (modified version)
+                    case SQ_ENCODE:  // SQ encode (wikipedia)
+                        // basic encode
                         // left total
-                        ltFlMix = 1.0;
-                        ltFrMix = 0.0;
-                        ltSlMix = 0.7;  // normal
-                        ltSrMix = 0.0;  // normal
-                        ltSlShiftMix = 0.0;  // shift
-                        ltSrShiftMix = 0.7;  // shift
+                        ltFlMix = 1.0f;
+                        ltFrMix = 0.0f;
+                        ltSlMix = 0.0f;  // normal
+                        ltSrMix = 0.707f;  // normal
+                        ltSlShiftMix = -0.707f;  // +90deg. shift
+                        ltSrShiftMix = 0.0f;  // +90deg. shift
                         // right total
-                        rtFlMix = 0.0;
-                        rtFrMix = 1.0;
-                        rtSlMix = 0.0;  // normal
-                        rtSrMix = 0.7;  // normal
-                        rtSlShiftMix = 0.7;  // shift
-                        rtSrShiftMix = 0.0;  // shift
+                        rtFlMix = 0.0f;
+                        rtFrMix = 1.0f;
+                        rtSlMix = -0.707f;  // normal
+                        rtSrMix = 0.0f;  // normal
+                        rtSlShiftMix = 0.0f;  // +90deg. shift
+                        rtSrShiftMix = 0.707f;  // +90deg. shift
                         break;
                     default:
                         // left total
@@ -368,7 +370,7 @@ struct Quad_EncoderWidget : ModuleWidget {
         menuHelperAddSpacer(menu);
         menuHelperAddLabel(menu, "Encoding Mode");
         menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::QS_ENCODE, "QS / Quark Encode"));
-        menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::SQ_ENCODE, "SQ Encode (Modified)"));
+        menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::SQ_ENCODE, "SQ Encode"));
     }
 };
 

@@ -1293,7 +1293,7 @@ struct AllpassPhaseShifter {
 
     // process a sample and returns next output sample
     // del = delayed, in phase
-    // shift = delayed, -90deg. phase shift
+    // shift = delayed, +90deg. phase shift (early)
     void process(float in, float *del, float *shift) {
         float tempf;
 

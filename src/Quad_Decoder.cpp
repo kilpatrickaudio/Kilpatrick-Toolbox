@@ -84,11 +84,12 @@ struct Quad_Decoder : Module {
     dsp2::AllpassPhaseShifter slShifter;
     dsp2::AllpassPhaseShifter srShifter;
     dsp2::AudioBufferer *inBuf, *outBuf;
+    float outLevel, frontLevel, surroundLevel;
 
     // constructor
 	Quad_Decoder() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configParam(OUTPUT_POT, 0.f, 1.f, 0.5f, "OUTPUT LEVEL");
+		configParam(OUTPUT_POT, 0.f, 1.f, 1.0f, "OUTPUT LEVEL");
         configParam(FS_POT, 0.f, 1.f, 0.5f, "FS BALANCE");
         configParam(MODE, 0.f, NUM_ENCODERS - 1, 0.0f, "MODE");
 		configInput(LT_IN, "LT IN");
@@ -135,6 +136,10 @@ struct Quad_Decoder : Module {
             lights[SR_OUT_LED].setBrightness(srOutLed.getBrightness());
             lights[SUB_OUT_LED].setBrightness(subOutLed.getBrightness());
             lights[MULTI_OUT_LED + 2].setBrightness(multiOutLed.getBrightness());
+
+            outLevel = params[OUTPUT_POT].getValue() * 2.0f;
+            surroundLevel = params[FS_POT].getValue();
+            frontLevel = 1.0f - surroundLevel;
         }
 
         // process
@@ -150,6 +155,8 @@ struct Quad_Decoder : Module {
                         inp ++;
                         rt = *inp;
                         inp ++;
+
+                        fl = lt;
 
                         // matrix
                         fl = lt + (rt * 0.414f);
@@ -167,39 +174,67 @@ struct Quad_Decoder : Module {
                         outp ++;
                         *outp = frDel;  // FR
                         outp ++;
-                        *outp = slShift;  // SL
+                        *outp = -slShift;  // SL
                         outp ++;
-                        *outp = srShift;  // SR
+                        *outp = -srShift;  // SR
                         outp ++;
                     }
                     break;
                 case QS_LOGIC_DECODE:
+                inp = inBuf->buf;
+                outp = outBuf->buf;
+                for(i = 0; i < AUDIO_BUFLEN; i ++) {
+                    // inputs
+                    lt = *inp;
+                    inp ++;
+                    rt = *inp;
+                    inp ++;
+
+                    fl = lt;
+
+                    // matrix
+                    fl = lt + (rt * 0.414f);
+                    fr = rt + (lt * 0.414f);
+                    sl = lt + (rt * -0.414f);
+                    sr = -rt + (lt * 0.414f);
+
+                    // logic
+                    // XXX todo
+
+                    // phase shifters
+                    flShifter.process(fl, &flDel, &flShift);
+                    frShifter.process(fr, &frDel, &frShift);
+                    slShifter.process(sl, &slDel, &slShift);
+                    srShifter.process(sr, &srDel, &srShift);
+
+                    *outp = flDel;  // FL
+                    outp ++;
+                    *outp = frDel;  // FR
+                    outp ++;
+                    *outp = -slShift;  // SL
+                    outp ++;
+                    *outp = -srShift;  // SR
+                    outp ++;
+                }
                     break;
                 case SQ_MATRIX_DECODE:
                     inp = inBuf->buf;
                     outp = outBuf->buf;
                     for(i = 0; i < AUDIO_BUFLEN; i ++) {
-                        // inputs
-                        lt = *inp;
+                        // input / phase shifters
+                        flShifter.process(*inp, &flDel, &flShift);
                         inp ++;
-                        rt = *inp;
+                        frShifter.process(*inp, &frDel, &frShift);
                         inp ++;
-
-                        // phase shifters
-                        flShifter.process(lt, &flDel, &flShift);
-                        frShifter.process(rt, &frDel, &frShift);
 
                         // matrix
                         *outp = flDel;  // FL
                         outp ++;
                         *outp = frDel;  // FR
                         outp ++;
-
-                        // midimagic
-                        // no front/back separation
-                        *outp = (flShift * -0.707f) - (frDel * 0.707f);  // SL
+                        *outp = (flDel * -0.707f) - (frShift * -0.707f);  // SL
                         outp ++;
-                        *outp = (flDel * 0.707f) - (frShift * -0.707f);  // SR
+                        *outp = (frDel * 0.707f) - (flShift * 0.707f);  // SR
                         outp ++;
                     }
                     break;
@@ -217,10 +252,10 @@ struct Quad_Decoder : Module {
         rtInLed.updateNormalized(rt);
         inBuf->addInSample(lt);
         inBuf->addInSample(rt);
-        multiOut[0] = outBuf->getOutSample() * AUDIO_OUT_GAIN;  // FL
-        multiOut[1] = outBuf->getOutSample() * AUDIO_OUT_GAIN;  // FR
-        multiOut[2] = outBuf->getOutSample() * AUDIO_OUT_GAIN;  // SL
-        multiOut[3] = outBuf->getOutSample() * AUDIO_OUT_GAIN;  // SR
+        multiOut[0] = outBuf->getOutSample() * AUDIO_OUT_GAIN * frontLevel * outLevel;  // FL
+        multiOut[1] = outBuf->getOutSample() * AUDIO_OUT_GAIN * frontLevel * outLevel;  // FR
+        multiOut[2] = outBuf->getOutSample() * AUDIO_OUT_GAIN * surroundLevel * outLevel;  // SL
+        multiOut[3] = outBuf->getOutSample() * AUDIO_OUT_GAIN * surroundLevel * outLevel;  // SR
         outputs[FL_OUT].setVoltage(multiOut[0]);
         outputs[FR_OUT].setVoltage(multiOut[1]);
         outputs[SL_OUT].setVoltage(multiOut[2]);
@@ -255,6 +290,9 @@ struct Quad_Decoder : Module {
         lights[MULTI_OUT_LED + 0].setBrightness(0.0f);
         lights[MULTI_OUT_LED + 1].setBrightness(0.0f);
         params[MODE].setValue(QS_MATRIX_DECODE);
+        outLevel = 0.0f;
+        frontLevel = 0.0f;
+        surroundLevel = 0.0f;
     }
 
     // gets the mode
@@ -328,9 +366,9 @@ struct Quad_DecoderWidget : ModuleWidget {
         menuHelperAddSpacer(menu);
         menuHelperAddLabel(menu, "Decoding Mode");
         menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::QS_MATRIX_DECODE, "QS / Quark Matrix Decode"));
-        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::QS_LOGIC_DECODE, "QS / Quark Logic Decode"));
-        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_MATRIX_DECODE, "SQ Matrix Decode"));
-        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_LOGIC_DECODE, "SQ Logic Decode"));
+        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::QS_LOGIC_DECODE, "QS / Quark Logic Decode (Experimental)"));
+        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_MATRIX_DECODE, "SQ Matrix Decode (Experimental)"));
+        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_LOGIC_DECODE, "SQ Logic Decode (Experimental)"));
     }
 };
 
