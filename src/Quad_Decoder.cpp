@@ -75,8 +75,8 @@ struct Quad_Decoder : Module {
     enum Encoders {
         QS_MATRIX_DECODE,
         QS_LOGIC_DECODE,
-        SQ_MATRIX_DECODE,
-        SQ_LOGIC_DECODE,
+//        SQ_MATRIX_DECODE,
+//        SQ_LOGIC_DECODE,
         NUM_ENCODERS
     };
     dsp2::AllpassPhaseShifter flShifter;
@@ -181,42 +181,43 @@ struct Quad_Decoder : Module {
                     }
                     break;
                 case QS_LOGIC_DECODE:
-                inp = inBuf->buf;
-                outp = outBuf->buf;
-                for(i = 0; i < AUDIO_BUFLEN; i ++) {
-                    // inputs
-                    lt = *inp;
-                    inp ++;
-                    rt = *inp;
-                    inp ++;
+                    inp = inBuf->buf;
+                    outp = outBuf->buf;
+                    for(i = 0; i < AUDIO_BUFLEN; i ++) {
+                        // inputs
+                        lt = *inp;
+                        inp ++;
+                        rt = *inp;
+                        inp ++;
 
-                    fl = lt;
+                        fl = lt;
 
-                    // matrix
-                    fl = lt + (rt * 0.414f);
-                    fr = rt + (lt * 0.414f);
-                    sl = lt + (rt * -0.414f);
-                    sr = -rt + (lt * 0.414f);
+                        // matrix
+                        fl = lt + (rt * 0.414f);
+                        fr = rt + (lt * 0.414f);
+                        sl = lt + (rt * -0.414f);
+                        sr = -rt + (lt * 0.414f);
 
-                    // logic
-                    // XXX todo
+                        // logic
+                        // XXX todo
 
-                    // phase shifters
-                    flShifter.process(fl, &flDel, &flShift);
-                    frShifter.process(fr, &frDel, &frShift);
-                    slShifter.process(sl, &slDel, &slShift);
-                    srShifter.process(sr, &srDel, &srShift);
+                        // phase shifters
+                        flShifter.process(fl, &flDel, &flShift);
+                        frShifter.process(fr, &frDel, &frShift);
+                        slShifter.process(sl, &slDel, &slShift);
+                        srShifter.process(sr, &srDel, &srShift);
 
-                    *outp = flDel;  // FL
-                    outp ++;
-                    *outp = frDel;  // FR
-                    outp ++;
-                    *outp = -slShift;  // SL
-                    outp ++;
-                    *outp = -srShift;  // SR
-                    outp ++;
-                }
+                        *outp = flDel;  // FL
+                        outp ++;
+                        *outp = frDel;  // FR
+                        outp ++;
+                        *outp = -slShift;  // SL
+                        outp ++;
+                        *outp = -srShift;  // SR
+                        outp ++;
+                    }
                     break;
+/*
                 case SQ_MATRIX_DECODE:
                     inp = inBuf->buf;
                     outp = outBuf->buf;
@@ -240,8 +241,7 @@ struct Quad_Decoder : Module {
                     break;
                 case SQ_LOGIC_DECODE:
                     break;
-                default:
-                    break;
+*/
             }
         }
 
@@ -367,8 +367,8 @@ struct Quad_DecoderWidget : ModuleWidget {
         menuHelperAddLabel(menu, "Decoding Mode");
         menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::QS_MATRIX_DECODE, "QS / Quark Matrix Decode"));
         menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::QS_LOGIC_DECODE, "QS / Quark Logic Decode (Experimental)"));
-        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_MATRIX_DECODE, "SQ Matrix Decode (Experimental)"));
-        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_LOGIC_DECODE, "SQ Logic Decode (Experimental)"));
+//        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_MATRIX_DECODE, "SQ Matrix Decode (Experimental)"));
+//        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_LOGIC_DECODE, "SQ Logic Decode (Experimental)"));
     }
 };
 

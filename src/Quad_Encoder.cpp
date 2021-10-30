@@ -57,6 +57,7 @@ struct Quad_Encoder : Module {
         ENUMS(MULTI_B_IN_LED, 3),
 		LIGHTS_LEN
 	};
+    static constexpr int AUDIO_BUFLEN = 64;
     static constexpr int RT_TASK_RATE = 100;
     dsp::ClockDivider taskTimer;
     static constexpr float AUDIO_IN_GAIN = 0.1f;
@@ -81,15 +82,14 @@ struct Quad_Encoder : Module {
     dsp2::AllpassPhaseShifter frShifter;
     dsp2::AllpassPhaseShifter slShifter;
     dsp2::AllpassPhaseShifter srShifter;
-    int matrixMode;
-    float ltFlMix, ltFrMix, ltSlMix, ltSlShiftMix, ltSrMix, ltSrShiftMix;
-    float rtFlMix, rtFrMix, rtSlMix, rtSlShiftMix, rtSrMix, rtSrShiftMix;
     dsp2::Filter2Pole hpfFl;
     dsp2::Filter2Pole hpfFr;
     dsp2::Filter2Pole hpfSl;
     dsp2::Filter2Pole hpfSr;
     dsp2::Filter2Pole hpfMultiA;
     dsp2::Filter2Pole hpfMultiB;
+    dsp2::AudioBufferer *inBuf, *outBuf;
+    float outLevel;
 
     // constructor
 	Quad_Encoder() {
@@ -106,18 +106,8 @@ struct Quad_Encoder : Module {
 		configOutput(RT_OUT, "RT OUT");
         onReset();
         onSampleRateChange();
-        ltFlMix = 0.0;
-        ltFrMix = 0.0;
-        ltSlMix = 0.0;  // normal
-        ltSrMix = 0.0;  // normal
-        ltSlShiftMix = 0.0;  // shift
-        ltSrShiftMix = 0.0;  // shift
-        rtFlMix = 0.0;
-        rtFrMix = 0.0;
-        rtSlMix = 0.0;  // normal
-        rtSrMix = 0.0;  // normal
-        rtSlShiftMix = 0.0;  // shift
-        rtSrShiftMix = 0.0;  // shift
+        inBuf = new dsp2::AudioBufferer(AUDIO_BUFLEN, 4);
+        outBuf = new dsp2::AudioBufferer(AUDIO_BUFLEN, 2);
 	}
 
     // process a sample
@@ -125,6 +115,8 @@ struct Quad_Encoder : Module {
         float fl, fr, sl, sr, multiSumA, multiSumB, tempf;
         float flDel, flShift, frDel, frShift;
         float slDel, slShift, srDel, srShift;
+        float *inp, *outp;
+        int i;
 
         // run tasks
         if(taskTimer.process()) {
@@ -136,62 +128,78 @@ struct Quad_Encoder : Module {
             lights[MULTI_B_IN_LED + 2].setBrightness(multiBInLed.getBrightness());
             lights[LT_OUT_LED].setBrightness(ltOutLed.getBrightness());
             lights[RT_OUT_LED].setBrightness(rtOutLed.getBrightness());
+            outLevel = params[OUTPUT_POT].getValue();
+        }
 
-            // matrix coeffs
-            if(matrixMode != (int)params[MODE].getValue()) {
-                matrixMode = (int)params[MODE].getValue();
-                switch(matrixMode) {
-                    case QS_ENCODE:  // QS encode (AES paper)
-                        // confirmed to match the output of Quark plugin
-                        // left total
-                        ltFlMix = 1.0f;
-                        ltFrMix = 0.414f;
-                        ltSlMix = 0.0f;  // normal
-                        ltSrMix = 0.0f;  // normal
-                        ltSlShiftMix = 1.0f;  // +90deg. shift
-                        ltSrShiftMix = 0.414f;  // +90deg. shift
-                        // right total
-                        rtFlMix = 0.414f;
-                        rtFrMix = 1.0f;
-                        rtSlMix = 0.0;  // normal
-                        rtSrMix = 0.0;  // normal
-                        rtSlShiftMix = -0.414f;  // +90deg. shift
-                        rtSrShiftMix = -1.0f;  // +90deg. shift
-                        break;
-                    case SQ_ENCODE:  // SQ encode (wikipedia)
-                        // basic encode
-                        // left total
-                        ltFlMix = 1.0f;
-                        ltFrMix = 0.0f;
-                        ltSlMix = 0.0f;  // normal
-                        ltSrMix = 0.707f;  // normal
-                        ltSlShiftMix = -0.707f;  // +90deg. shift
-                        ltSrShiftMix = 0.0f;  // +90deg. shift
-                        // right total
-                        rtFlMix = 0.0f;
-                        rtFrMix = 1.0f;
-                        rtSlMix = -0.707f;  // normal
-                        rtSrMix = 0.0f;  // normal
-                        rtSlShiftMix = 0.0f;  // +90deg. shift
-                        rtSrShiftMix = 0.707f;  // +90deg. shift
-                        break;
-                    default:
-                        // left total
-                        ltFlMix = 0.0;
-                        ltFrMix = 0.0;
-                        ltSlMix = 0.0;  // normal
-                        ltSrMix = 0.0;  // normal
-                        ltSlShiftMix = 0.0;  // shift
-                        ltSrShiftMix = 0.0;  // shift
-                        // right total
-                        rtFlMix = 0.0;
-                        rtFrMix = 0.0;
-                        rtSlMix = 0.0;  // normal
-                        rtSrMix = 0.0;  // normal
-                        rtSlShiftMix = 0.0;  // shift
-                        rtSrShiftMix = 0.0;  // shift
-                        break;
-                }
+        // process
+        outBuf->isFull();
+        if(inBuf->isFull()) {
+            inp = inBuf->buf;
+            outp = outBuf->buf;
+            switch((int)params[MODE].getValue()) {
+                case QS_ENCODE:
+                    for(i = 0; i < AUDIO_BUFLEN; i ++) {
+                        // inputs
+                        fl = *inp;
+                        inp ++;
+                        fr = *inp;
+                        inp ++;
+                        sl = *inp;
+                        inp ++;
+                        sr = *inp;
+                        inp ++;
+
+                        // phase shifters
+                        flShifter.process(fl, &flDel, &flShift);
+                        frShifter.process(fr, &frDel, &frShift);
+                        slShifter.process(sl, &slDel, &slShift);
+                        srShifter.process(sr, &srDel, &srShift);
+
+                        // outputs
+                        *outp = flDel + (frDel * 0.414f) + slShift + (srShift * 0.414f); // LT
+                        outp ++;
+                        *outp = (flDel * 0.414f) + frDel + (slShift * -0.414f) + (srShift * -1.0f);  // RT
+                        outp ++;
+                    }
+                    break;
+                case SQ_ENCODE:
+                    for(i = 0; i < AUDIO_BUFLEN; i ++) {
+                        // inputs
+                        fl = *inp;
+                        inp ++;
+                        fr = *inp;
+                        inp ++;
+                        sl = *inp;
+                        inp ++;
+                        sr = *inp;
+                        inp ++;
+
+                        // phase shifters
+                        flShifter.process(fl, &flDel, &flShift);
+                        frShifter.process(fr, &frDel, &frShift);
+                        slShifter.process(sl, &slDel, &slShift);
+                        srShifter.process(sr, &srDel, &srShift);
+
+                        // outputs
+                        // SQ basic encode (wikipedia)
+                        *outp = flDel + (-slShift * 0.707f) + (srDel * 0.707f);
+                        outp ++;
+                        *outp = frDel + (-slDel * 0.707f) + (srShift * 0.707f);
+                        outp ++;
+
+/*
+                        // CBS patent fig. 7
+                        *outp = ((flDel + flShift) * 0.7f) +  // +45deg. FL
+                            (slDel * 0.707f) +  // SL in phase
+                            (srShift * 0.707f);  // SR +90deg.
+                        outp ++;
+                        *outp = ((frDel + frShift) * 0.7f) +  // +45deg. FR
+                            (srDel * 0.707f) +  // SR in phase
+                            (slShift * 0.707f);  // SL +90deg.
+                        outp ++;
+*/                        
+                    }
+                    break;
             }
         }
 
@@ -245,28 +253,16 @@ struct Quad_Encoder : Module {
         multiSumB = hpfMultiB.process(multiSumB * 0.25f);
         multiBInLed.update(multiSumB);
 
-        // matrix encoding
-        flShifter.process(fl, &flDel, &flShift);
-        frShifter.process(fr, &frDel, &frShift);
-        slShifter.process(sl, &slDel, &slShift);
-        srShifter.process(sr, &srDel, &srShift);
-
-        tempf = ((flDel * ltFlMix) +
-            (frDel * ltFrMix) +
-            (slDel * ltSlMix) +
-            (slShift * ltSlShiftMix) +
-            (srDel * ltSrMix) +
-            (srShift * ltSrShiftMix)) * params[OUTPUT_POT].getValue();
-        outputs[LT_OUT].setVoltage(tempf * AUDIO_OUT_GAIN);
+        // shuffle inputs and outputs
+        inBuf->addInSample(fl);
+        inBuf->addInSample(fr);
+        inBuf->addInSample(sl);
+        inBuf->addInSample(sr);
+        tempf = outBuf->getOutSample();
+        outputs[LT_OUT].setVoltage(tempf * AUDIO_OUT_GAIN * outLevel);
         ltOutLed.updateNormalized(tempf);
-
-        tempf = ((flDel * rtFlMix) +
-            (frDel * rtFrMix) +
-            (slDel * rtSlMix) +
-            (slShift * rtSlShiftMix) +
-            (srDel * rtSrMix) +
-            (srShift * rtSrShiftMix)) * params[OUTPUT_POT].getValue();
-        outputs[RT_OUT].setVoltage(tempf * AUDIO_OUT_GAIN);
+        tempf = outBuf->getOutSample();
+        outputs[RT_OUT].setVoltage(tempf * AUDIO_OUT_GAIN * outLevel);
         rtOutLed.updateNormalized(tempf);
 	}
 
@@ -295,8 +291,8 @@ struct Quad_Encoder : Module {
         lights[MULTI_A_IN_LED + 1].setBrightness(0.0f);
         lights[MULTI_B_IN_LED + 0].setBrightness(0.0f);
         lights[MULTI_B_IN_LED + 1].setBrightness(0.0f);
-        matrixMode = -1;  // force refresh
         params[MODE].setValue(QS_ENCODE);
+        outLevel = 0.0f;
     }
 
     // gets the mode
@@ -370,7 +366,7 @@ struct Quad_EncoderWidget : ModuleWidget {
         menuHelperAddSpacer(menu);
         menuHelperAddLabel(menu, "Encoding Mode");
         menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::QS_ENCODE, "QS / Quark Encode"));
-        menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::SQ_ENCODE, "SQ Encode"));
+        menuHelperAddItem(menu, new QuadEncoderModeMenuItem(module, Quad_Encoder::SQ_ENCODE, "SQ Encode (Experimental)"));
     }
 };
 

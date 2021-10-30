@@ -1270,7 +1270,7 @@ struct AllpassSection {
     }
 };
 
-// mono allpass phase shifter
+// mono allpass phase shifter with +90 degree phase shift
 struct AllpassPhaseShifter {
     struct AllpassSection pr0, pr1, pr2, pr3;
     struct AllpassSection sh0, sh1, sh2, sh3;
