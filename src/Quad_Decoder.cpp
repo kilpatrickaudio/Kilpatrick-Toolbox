@@ -31,6 +31,7 @@ struct Quad_Decoder : Module {
 		OUTPUT_POT,
         FS_POT,
         MODE,  // selected mode index
+        SUB_CUTOFF,  // sub cutoff index
 		PARAMS_LEN
 	};
 	enum InputId {
@@ -79,6 +80,17 @@ struct Quad_Decoder : Module {
 //        SQ_LOGIC_DECODE,
         NUM_ENCODERS
     };
+    enum SubCutoffs {
+        CUTOFF_BYPASS,
+        CUTOFF_60,
+        CUTOFF_70,
+        CUTOFF_80,
+        CUTOFF_90,
+        CUTOFF_100,
+        CUTOFF_110,
+        CUTOFF_120,
+        NUM_CUTOFFS
+    };
     dsp2::AllpassPhaseShifter flShifter;
     dsp2::AllpassPhaseShifter frShifter;
     dsp2::AllpassPhaseShifter slShifter;
@@ -88,6 +100,8 @@ struct Quad_Decoder : Module {
     static constexpr float LOGIC_FADE = 3.5f;
     dsp2::Filter1Pole logicFilt1;
     dsp2::Filter1Pole logicFilt2;
+    dsp2::Filter2Pole subFilt1;
+    dsp2::Filter2Pole subFilt2;
     float outLevel, frontLevel, surroundLevel;
 
     // constructor
@@ -96,6 +110,7 @@ struct Quad_Decoder : Module {
 		configParam(OUTPUT_POT, 0.f, 1.f, 1.0f, "OUTPUT LEVEL");
         configParam(FS_POT, 0.f, 1.f, 0.5f, "FS BALANCE");
         configParam(MODE, 0.f, NUM_ENCODERS - 1, 0.0f, "MODE");
+        configParam(SUB_CUTOFF, 0.0f, NUM_CUTOFFS - 1, 0.0f, "SUB CUTOFF");
 		configInput(LT_IN, "LT IN");
 		configInput(RT_IN, "RT IN");
 		configOutput(FL_OUT, "FL OUT");
@@ -120,19 +135,18 @@ struct Quad_Decoder : Module {
 	void process(const ProcessArgs& args) override {
         int i;
         float lt, rt, multiSum;
-        float multiOut[4];
+        float multiOut[8];
         float *inp, *outp;
         float fl, fr, sl, sr;
         float flDel, flShift, frDel, frShift;
         float slDel, slShift, srDel, srShift;
-        float tempf;
         float logA, logB, flSrMix, frSlMix;
 
         // run tasks
         if(taskTimer.process()) {
-            // set multi output channels to 4
-            if(outputs[MULTI_OUT].isConnected() && outputs[MULTI_OUT].getChannels() != 4) {
-                outputs[MULTI_OUT].setChannels(4);
+            // set multi output channels to 5
+            if(outputs[MULTI_OUT].isConnected() && outputs[MULTI_OUT].getChannels() != 5) {
+                outputs[MULTI_OUT].setChannels(5);
             }
             lights[LT_IN_LED].setBrightness(ltInLed.getBrightness());
             lights[RT_IN_LED].setBrightness(rtInLed.getBrightness());
@@ -221,30 +235,6 @@ struct Quad_Decoder : Module {
                         fr += fr * (frSlMix * LOGIC_FADE);
                         sl += sl * (-frSlMix * LOGIC_FADE);
 
-
-//                        sl = flSrMix;
-//                        sr = frSlMix;
-
-
-/*
-                        // XXX debug
-                        fl = flSrMix;
-                        fr = frSlMix;
-//                        sl = frMix;
-//                        sr = slMix;
-*/
-
-/*
-                        // XXX debug
-                        *outp = fl;  // FL
-                        outp ++;
-                        *outp = fr;  // FR
-                        outp ++;
-                        *outp = sl;  // SL
-                        outp ++;
-                        *outp = sr;  // SR
-                        outp ++;
-*/
                         // phase shifters
                         flShifter.process(fl, &flDel, &flShift);
                         frShifter.process(fr, &frDel, &frShift);
@@ -300,10 +290,12 @@ struct Quad_Decoder : Module {
         multiOut[1] = outBuf->getOutSample() * AUDIO_OUT_GAIN * frontLevel * outLevel;  // FR
         multiOut[2] = outBuf->getOutSample() * AUDIO_OUT_GAIN * surroundLevel * outLevel;  // SL
         multiOut[3] = outBuf->getOutSample() * AUDIO_OUT_GAIN * surroundLevel * outLevel;  // SR
+        multiOut[4] = subFilt1.process(subFilt2.process((multiOut[0] + multiOut[1] + multiOut[2] + multiOut[3]) * 0.25f));;
         outputs[FL_OUT].setVoltage(multiOut[0]);
         outputs[FR_OUT].setVoltage(multiOut[1]);
         outputs[SL_OUT].setVoltage(multiOut[2]);
         outputs[SR_OUT].setVoltage(multiOut[3]);
+        outputs[SUB_OUT].setVoltage(multiOut[4]);
         outputs[MULTI_OUT].writeVoltages(multiOut);
         flOutLed.update(multiOut[0]);
         frOutLed.update(multiOut[1]);
@@ -315,6 +307,11 @@ struct Quad_Decoder : Module {
         multiSum += multiOut[3];
         multiOutLed.update(multiSum * 0.25f);
 	}
+
+    // module was added
+    void onAdd(void) override {
+        setSubCutoff((int)params[SUB_CUTOFF].getValue());
+    }
 
     // samplerate changed
     void onSampleRateChange(void) override {
@@ -329,6 +326,7 @@ struct Quad_Decoder : Module {
         multiOutLed.onSampleRateChange();
         logicFilt1.setCutoff(LFILT_CUTOFF, APP->engine->getSampleRate());
         logicFilt2.setCutoff(LFILT_CUTOFF, APP->engine->getSampleRate());
+        setSubCutoff((int)params[SUB_CUTOFF].getValue());
     }
 
     // module initialize
@@ -341,14 +339,56 @@ struct Quad_Decoder : Module {
         surroundLevel = 0.0f;
     }
 
-    // gets the mode
+    // get the mode
     int getMode(void) {
         return (int)params[MODE].getValue();
     }
 
-    // sets the mode
+    // set the mode
     void setMode(int mode) {
         params[MODE].setValue(mode);
+    }
+
+    // get the sub cutoff
+    int getSubCutoff() {
+        return (int)params[SUB_CUTOFF].getValue();
+    }
+
+    // set the sub cutoff
+    void setSubCutoff(int cutoff) {
+        float freq;
+        params[SUB_CUTOFF].setValue(cutoff);
+        switch(cutoff) {
+            case CUTOFF_60:
+                freq = 60.0f;
+                break;
+            case CUTOFF_70:
+                freq = 70.0f;
+                break;
+            case CUTOFF_80:
+                freq = 80.0f;
+                break;
+            case CUTOFF_90:
+                freq = 90.0f;
+                break;
+            case CUTOFF_100:
+                freq = 100.0f;
+                break;
+            case CUTOFF_110:
+                freq = 110.0f;
+                break;
+            case CUTOFF_120:
+                freq = 120.0f;
+                break;
+            case CUTOFF_BYPASS:
+            default:
+                freq = 20000.0f;
+                break;
+        }
+        subFilt1.setCutoff(dsp2::Filter2Pole::TYPE_LPF, freq, 0.707f,
+            1.0f, APP->engine->getSampleRate());
+        subFilt2.setCutoff(dsp2::Filter2Pole::TYPE_LPF, freq, 0.707f,
+            1.0f, APP->engine->getSampleRate());
     }
 };
 
@@ -367,6 +407,24 @@ struct QuadDecoderModeMenuItem : MenuItem {
     // the menu item was selected
     void onAction(const event::Action &e) override {
         this->module->setMode(mode);
+    }
+};
+
+// handle choosing the sub cutoff mode
+struct QuadDecoderSubCutoffMenuItem : MenuItem {
+    Quad_Decoder *module;
+    int cutoff;
+
+    QuadDecoderSubCutoffMenuItem(Module *module, int cutoff, std::string name) {
+        this->module = dynamic_cast<Quad_Decoder*>(module);
+        this->cutoff = cutoff;
+        this->text = name;
+        this->rightText = CHECKMARK(this->module->getSubCutoff() == cutoff);
+    }
+
+    // the menu item was selected
+    void onAction(const event::Action &e) override {
+        this->module->setSubCutoff(cutoff);
     }
 };
 
@@ -415,6 +473,17 @@ struct Quad_DecoderWidget : ModuleWidget {
         menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::QS_LOGIC_DECODE, "QS / Quark Logic Decode (Experimental)"));
         menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_MATRIX_DECODE, "SQ Matrix Decode (Experimental)"));
 //        menuHelperAddItem(menu, new QuadDecoderModeMenuItem(module, Quad_Decoder::SQ_LOGIC_DECODE, "SQ Logic Decode (Experimental)"));
+
+        menuHelperAddSpacer(menu);
+        menuHelperAddLabel(menu, "Sub Cutoff");
+        menuHelperAddItem(menu, new QuadDecoderSubCutoffMenuItem(module, Quad_Decoder::CUTOFF_BYPASS, "Bypass"));
+        menuHelperAddItem(menu, new QuadDecoderSubCutoffMenuItem(module, Quad_Decoder::CUTOFF_60, "60Hz"));
+        menuHelperAddItem(menu, new QuadDecoderSubCutoffMenuItem(module, Quad_Decoder::CUTOFF_70, "70Hz"));
+        menuHelperAddItem(menu, new QuadDecoderSubCutoffMenuItem(module, Quad_Decoder::CUTOFF_80, "80Hz"));
+        menuHelperAddItem(menu, new QuadDecoderSubCutoffMenuItem(module, Quad_Decoder::CUTOFF_90, "90Hz"));
+        menuHelperAddItem(menu, new QuadDecoderSubCutoffMenuItem(module, Quad_Decoder::CUTOFF_100, "100Hz"));
+        menuHelperAddItem(menu, new QuadDecoderSubCutoffMenuItem(module, Quad_Decoder::CUTOFF_110, "110Hz"));
+        menuHelperAddItem(menu, new QuadDecoderSubCutoffMenuItem(module, Quad_Decoder::CUTOFF_120, "120Hz"));
     }
 };
 
