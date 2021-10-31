@@ -21,6 +21,141 @@ logos are copyright Kilpatrick Audio and may not be redistributed without permis
 
 ## Modules
 
+----
+### Quad Panner
+**Quad Panner with CV Control**
+
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/Quad_Panner.png" />
+
+The Quad Panner is a mono input quadraphonic panner that uses a fake on-screen joystick (not that great) or a pair
+of X and Y CV inputs. The panning uses a quasi-constant power law whereby the middle position will be 3dB down in each
+direction. For instance, full front and centre will be 3dB down in front left and front right outputs. The centre stick
+position will be 6dB down in all four channels. This is unlike the basic pan pot law of 6dB down.
+
+You can snap to preset positions such as top left, top centre, top right, etc. (indicated with blue arrows) by holding down
+P and clicking around the edge of the joystick circuit. This is particularly useful for alignment to make sure that you are
+fully deflected in one direction or another.
+
+The connections and controls are as follows:
+
+- **FL** - front left output
+- **FR** - front right output
+- **SL** - surround left output
+- **SR** - surround right output
+- **IN** - signal input
+- **X** - X panning CV input - -5V to +5V deflects fully when the stick is in the middle position
+- **Y** - Y panning CV input - -5V to +5V deflects fully when the stick is in the middle position
+- **MULTI** - polyphonic cable output carrying four channels:
+  - **1** = FL
+  - **2** = FR
+  - **3** = SL
+  - **4** = SR
+- **RESET** - resets the stick to the centre position
+
+<br clear="right"/>
+
+----
+### Quad Decoder
+**Quad 4-2-4 Matrix Decoder**
+
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/Quad_Decoder.png" />
+
+The Quad Decoder can perform matrix decoding of 4-2-4 matrix quad signals.
+Several popular / classic quad formats are supported: QS (Regular Matrix)
+and SQ. The QS format seems identical to the encoding performed by the
+QUARK quadraphonic DAW plugin. Quad speakers are normally arranged in square
+around the room with two speakers in front and two behind the listener.
+
+This plugin can be used to decode 2 channels into 4 channels for playback.
+Please see notes about quadraphonic encoding / decoding in the Quad Encoder
+section below.
+
+To change the matrix mode right click and select the mode in the menu. Both
+QS and SQ formats are supported based on the type of source material you are
+playing back.
+
+**Matrix vs. Logic**
+
+Decoding quad signals requires two steps: matrix decoding, and logic control.
+Matrix decoding involves phase shifting and mixing to extract and then subtract
+signals from each other. Depending on the format this can work fairly well (QS)
+or barely at all (SQ) offering between none and 3dB of separation between adjacent
+channels.
+
+Logic adds additional *steering* processing that detects the relative volume levels
+of channels and uses dyanmic gain control (like a compressor) to adjust the balance
+of the various channels to achieve better channel separation. This module contains
+experimental logic decoding.
+
+**Subwoofer Output**
+
+As a convenience there is a mono subwoofer output which sums the post-output level
+and post-fs/balance channels and then optionally passes them through a 24dB/octave
+lowpass filter to produce a mono subwoofer signal. Right click on the module to set
+the subwoofer cutoff frequency.
+
+The connections and controls are as follows:
+
+- **OUTPUT** - output level control
+- **F/S BALANCE** - front / surround level balance
+- **LT IN** - left matrix input
+- **RT IN** - right matrix input
+- **FL** - surround left output
+- **FR** - surround right output
+- **SL** - surround left output
+- **SR** - surround right output
+- **MULTI OUT** - polyphonic cable output carrying five channels:
+  - **1** = FL output
+  - **2** = FR output
+  - **3** = SL output
+  - **4** = SR output
+  - **5** = SUB output
+
+<br clear="right"/>
+
+----
+### Quad Encoder
+**Quad 4-2-4 Matrix Encoder**
+
+<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/Quad_Encoder.png" />
+
+The Quad Encoder can perform matrix encoding of 4-2-4 matrix quad signals.
+Several popular / classic quad formats are supported: QS (Regular Matrix)
+and SQ. The QS format seems identical to the encoding performed by the
+QUARK quadraphonic DAW plugin. Quad speakers are normally arranged in square
+around the room with two speakers in front and two behind the listener.
+
+This plugin can be used to encode 4 channels into a 2 channel stereo stream
+for distribution or recording which can then be decoded back to 4 channels
+for playback. Please note that 4-2-4 matrix systems are *lossy* in that there
+is some crosstalk between channels after decoding. The amount of separation
+after decoding is almost completely dependent on the decoder. An encoded stereo
+stream can be played back with normal stereo equipment and sound pretty much
+fine. You should definitely monitor your mix with stereo and quad playback
+equipment before releasing it.
+
+To change the matrix mode right click and select the mode in the menu. You can
+choose QS and SQ mode. Unless you have a reason, you should always use QS mode
+as it is technically superior to SQ mode and offers better stereo compatibility
+and better separation on decoding.
+
+The connections and controls are as follows:
+
+- **OUTPUT** - matrix output level control
+- **FL** - front left input
+- **FR** - front right input
+- **SL** - surround left input
+- **SR** - surround right input
+- **MULTI INS** - polyphonic cable inputs carrying four channels:
+  - **1** = FL input
+  - **2** = FR input
+  - **3** = SL input
+  - **4** = SR input
+- **MATRIX OUT** - LT (Left Total) and RT (Right Total) matrix outputs
+
+<br clear="right"/>
+
+----
 ### Stereo Meter
 **Stereo Audio Levelmeter**
 
@@ -57,66 +192,6 @@ The functions and controls are as follows:
 - **ON** - Sets the unit into either *MOM* (momentary) or continuous *ON* mode.
 
 Note that the *REF* level displayed is a convenience feature. You can scroll your middle mouse button over the display to adjust it relative to the ABS value.
-
-<br clear="right"/>
-
-----
-### Quad Panner
-**Quad Panner with CV Control**
-
-<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/Quad_Panner.png" />
-
-The Quad Panner is a mono input quadraphonic panner that uses a fake on-screen joystick (not that great) or a pair
-of X and Y CV inputs. The panning uses a quasi-constant power law whereby the middle position will be 3dB down in each
-direction. For instance, full front and centre will be 3dB down in front left and front right outputs. The centre stick
-position will be 6dB down in all four channels. This is unlike the basic pan pot law of 6dB down.
-
-You can snap to preset positions such as top left, top centre, top right, etc. (indicated with blue arrows) by holding down
-P and clicking around the edge of the joystick circuit. This is particularly useful for alignment to make sure that you are
-fully deflected in one direction or another.
-
-The connections and controls are as follows:
-
-- **FL** - front left output
-- **FR** - front right output
-- **SL** - surround left output
-- **SR** - surround right output
-- **IN** - signal input
-- **X** - X panning CV input - -5V to +5V deflects fully when the stick is in the middle position
-- **Y** - Y panning CV input - -5V to +5V deflects fully when the stick is in the middle position
-- **MULTI** - polyphonic cable output carrying four channels:
-  - **1** = FL
-  - **2** = FR
-  - **3** = SL
-  - **4** = SR
-- **RESET** - resets the stick to the centre position
-
-<br clear="right"/>
-
-----
-### Quad Encoder
-**Quad 4-2-4 Matrix Encoder**
-
-<img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/Quad_Encoder.png" />
-
-The Quad Encoder can perform matrix encoding of 4-2-4 matrix quad systems. Several popular / classic quad formats are supported
-including QS (Regular Matrix) and SQ. The QS format seems identical to the encoding performed by the QUARK quadraphonic plugin.
-
-To change the matrix mode right click and select the mode in the menu.
-
-The connections and controls are as follows:
-
-- **OUTPUT** - matrix output level control
-- **FL** - front left input
-- **FR** - front right input
-- **SL** - surround left input
-- **SR** - surround right input
-- **MULTI INS** - polyphonic cable inputs carrying four channels:
-  - **1** = FL
-  - **2** = FR
-  - **3** = SL
-  - **4** = SR
-- **MATRIX OUT** - LT (Left Total) and RT (Right Total) matrix outputs
 
 <br clear="right"/>
 
