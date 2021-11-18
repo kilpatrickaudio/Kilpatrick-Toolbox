@@ -354,9 +354,16 @@ void MidiClockPll::resetPos(void) {
 
 // change run state
 void MidiClockPll::changeRunState(int run) {
+    int isReset = 0;
     desiredRunState = run;
     runState = run;
     if(handler != NULL) {
-        handler->midiClockRunStateChanged(runState);
+        if(runState && runTickCount == 0) {
+            isReset = 1;
+        }
+        else if(!runState && stopTickCount == 0) {
+            isReset = 1;
+        }
+        handler->midiClockRunStateChanged(runState, isReset);
     }
 }

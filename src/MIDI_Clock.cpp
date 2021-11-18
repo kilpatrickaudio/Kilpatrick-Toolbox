@@ -26,6 +26,7 @@
 #include "utils/MidiHelper.h"
 #include "utils/PLog.h"
 #include "utils/PUtils.h"
+#include "utils/VUtils.h"
 #include "MidiClockPll/MidiClockPll.h"
 
 // MIDI clock display source
@@ -44,12 +45,29 @@ struct MidiClockDisplaySource {
 
     // get whether autostart mode is enabled
     virtual int midiClockDisplayIsAutostartEnabled(void) { return 0; }
+
+    // tap the tempo
+    virtual void midiClockTapTempo(void) { }
+
+    // adjust the tempo
+    virtual void midiClockAdjustTempo(float change) { }
+
+    // adjust the output divider
+    virtual void midiClockAdjustOutputDiv(float change) { }
+
+    // toggle autostart
+    virtual void midiClockToggleAutostart(void) { }
+
+    // toggle run state
+    virtual void midiClockToggleRunState(void) { }
 };
 
 struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 	enum ParamId {
 		RESET_SW,
 		RUNSTOP_SW,
+        OUTPUT_DIV,  // 1.0-24.0 = divide ratio
+        AUTOSTART_EN,  // 0 = disable, 1.0 = enable
 		PARAMS_LEN
 	};
 	enum InputId {
@@ -77,7 +95,10 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 		RESET_OUT_LED,
 		LIGHTS_LEN
 	};
+    static constexpr int OUTPUT_DIV_MIN = 1;
+    static constexpr int OUTPUT_DIV_MAX = 24;
     static constexpr int OUT_PULSE_LEN = 4;
+    static constexpr int LED_PULSE_LEN = 50;
     dsp::ClockDivider taskTimer;
     CVMidi *cvMidiIn;
     CVMidi *cvMidiOut;
@@ -85,13 +106,19 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     putils::PosEdgeDetect runstopSwEdge;
     putils::Pulser clockOutPulse;
     putils::Pulser resetOutPulse;
+    putils::Pulser clockLedPulse;
+    putils::Pulser resetLedPulse;
     MidiClockPll midiClock;
+    int outputDiv;  // current running output divider ratio
+    int outputDivCount;
 
     // constructor
 	MIDI_Clock() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configParam(RESET_SW, 0.f, 1.f, 0.f, "RESET");
 		configParam(RUNSTOP_SW, 0.f, 1.f, 0.f, "RUN/STOP");
+        configParam(OUTPUT_DIV, 1.0f, 24.0f, 1.0f, "OUTPUT DIV");
+        configParam(AUTOSTART_EN, 0.0f, 1.0f, 0.0f, "AUTOSTART");
 		configInput(CLOCK_IN, "CLOCK IN");
 		configInput(MIDI_IN, "MIDI IN");
 		configInput(TEMPO_IN, "TEMPO IN");
@@ -101,7 +128,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 		configOutput(CLOCK_OUT, "CLOCK OUT");
 		configOutput(RESET_OUT, "RESET OUT");
         cvMidiIn = new CVMidi(&inputs[MIDI_IN], 1);
-        cvMidiOut = new CVMidi(&inputs[MIDI_OUT], 0);
+        cvMidiOut = new CVMidi(&outputs[MIDI_OUT], 0);
         midiClock.setTaskInterval(MIDI_RT_TASK_RATE);
         midiClock.setInternalPpq(24);
         midiClock.registerHandler(this);
@@ -143,6 +170,9 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
             outputs[CLOCK_OUT].setVoltage((clockOutPulse.update() != 0) * 10.0f);
             outputs[RESET_OUT].setVoltage((resetOutPulse.update() != 0) * 10.0f);
 
+            lights[CLOCK_OUT_LED].setBrightness(clockLedPulse.update() != 0);
+            lights[RESET_OUT_LED].setBrightness(resetLedPulse.update() != 0);
+
             // MIDI LEDs
             lights[MIDI_IN_LED].setBrightness(cvMidiIn->getLedState());
             lights[MIDI_OUT_LED].setBrightness(cvMidiOut->getLedState());
@@ -158,17 +188,48 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     void onReset(void) override {
     }
 
+    // module added (post initialize)
+    void onAdd(void) override {
+        if((int)params[AUTOSTART_EN].getValue()) {
+            midiClock.resetRequest();
+            midiClock.continueRequest();
+        }
+        outputDiv = (int)params[OUTPUT_DIV].getValue();
+        outputDivCount = 0;
+    }
+
+
     //
     // MIDI clock callbacks
     //
     // a beat was crossed
     void midiClockBeatCrossed(void) override {
-        PDEBUG("BEAT!");
+        int temp;
+//        PDEBUG("BEAT!");
+        temp = (int)params[OUTPUT_DIV].getValue();
+        if(outputDiv != temp) {
+            outputDiv = temp;
+            outputDivCount = 0;
+        }
     }
 
     // run state changed
-    void midiClockRunStateChanged(int running) override {
-        PDEBUG("run state: %d", running);
+    void midiClockRunStateChanged(int running, int reset) override {
+        midi::Message msg;
+//        PDEBUG("run state: %d - reset: %d", running, reset);
+        msg.setSize(1);
+        if(running) {
+            if(reset) {
+                msg.bytes[0] = MIDI_CLOCK_START;
+            }
+            else {
+                msg.bytes[0] = MIDI_CLOCK_CONTINUE;
+            }
+        }
+        else {
+            msg.bytes[0] = MIDI_CLOCK_STOP;
+        }
+        cvMidiOut->sendOutputMessage(msg);
     }
 
     // clock source changed
@@ -183,14 +244,36 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 
     // clock ticked
     void midiClockTicked(uint32_t tickCount) override {
+        midi::Message msg;
+        // MIDI out
+        msg.setSize(1);
+        msg.bytes[0] = MIDI_TIMING_TICK;
+        cvMidiOut->sendOutputMessage(msg);
+
+        // clock out
         if(midiClock.getRunState()) {
-            clockOutPulse.timeout = OUT_PULSE_LEN;
+            if(outputDivCount == 0) {
+                clockOutPulse.timeout = OUT_PULSE_LEN;
+                clockLedPulse.timeout = LED_PULSE_LEN;
+            }
+            outputDivCount ++;
+            if(outputDivCount == outputDiv) {
+                outputDivCount = 0;
+            }
         }
     }
 
     // clock position was reset
     void midiClockPositionReset(void) override {
+        midi::Message msg;
         resetOutPulse.timeout = OUT_PULSE_LEN;
+        resetLedPulse.timeout = LED_PULSE_LEN;
+        outputDivCount = 0;
+
+        // MIDI out
+        msg.setSize(1);
+        msg.bytes[0] = MIDI_CLOCK_START;
+        cvMidiOut->sendOutputMessage(msg);
     }
 
     // externally locked tempo changed
@@ -226,12 +309,49 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 
     // get the output divider ratio - 1 = same as upsample PPQ
     int midiClockDisplayGetOutputDiv(void) override {
-        return 0;
+        return (int)params[OUTPUT_DIV].getValue();
     }
 
     // get whether autostart mode is enabled
     int midiClockDisplayIsAutostartEnabled(void) override {
-        return 0;
+        return (int)params[AUTOSTART_EN].getValue();
+    }
+
+    // tap the tempo
+    void midiClockTapTempo(void) override {
+        midiClock.tapTempo();
+    }
+
+    // adjust the tempo
+    void midiClockAdjustTempo(float change) override {
+        midiClock.setTempo(midiClock.getTempo() + change);
+    }
+
+    // adjust the output divider
+    void midiClockAdjustOutputDiv(float change) override {
+        params[OUTPUT_DIV].setValue(
+            putils::clamp((int)(params[OUTPUT_DIV].getValue() + change),
+            OUTPUT_DIV_MIN, OUTPUT_DIV_MAX));
+    }
+
+    // toggle autostart
+    void midiClockToggleAutostart(void) override {
+        if((int)params[AUTOSTART_EN].getValue()) {
+            params[AUTOSTART_EN].setValue(0.0f);
+        }
+        else {
+            params[AUTOSTART_EN].setValue(1.0f);
+        }
+    }
+
+    // toggle run state
+    void midiClockToggleRunState(void) override {
+        if(midiClock.getRunState()) {
+            midiClock.stopRequest();
+        }
+        else {
+            midiClock.continueRequest();
+        }
     }
 };
 
@@ -246,6 +366,15 @@ struct MidiClockDisplay : widget::TransparentWidget {
     std::string fontFilename;
     float fontSizeSmall;
     float fontSizeLarge;
+    vutils::TouchZones touchZones;
+    int shift;
+    enum {
+        ZONE_TEMPO,
+        ZONE_RUNSTOP,
+        ZONE_INTEXT,
+        ZONE_DIV,
+        ZONE_AUTOSTART
+    };
 
     // create a display
     MidiClockDisplay(math::Vec pos, math::Vec size) {
@@ -260,6 +389,18 @@ struct MidiClockDisplay : widget::TransparentWidget {
         fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         fontSizeSmall = 10.0f;
         fontSizeLarge = 18.0f;
+        shift = 0;
+        // add touch zones
+        touchZones.addZoneCentered(ZONE_TEMPO, box.size.x * 0.5f, box.size.y * 0.5f,
+            box.size.x, box.size.y * 0.5f);
+        touchZones.addZoneCentered(ZONE_RUNSTOP, box.size.x * 0.25f, box.size.y * 0.15f,
+            box.size.x * 0.5f, box.size.y * 0.25f);
+        touchZones.addZoneCentered(ZONE_INTEXT, box.size.x * 0.75f, box.size.y * 0.15f,
+            box.size.x * 0.5f, box.size.y * 0.25f);
+        touchZones.addZoneCentered(ZONE_DIV, box.size.x * 0.25f, box.size.y * 0.85f,
+            box.size.x * 0.5f, box.size.y * 0.25f);
+        touchZones.addZoneCentered(ZONE_AUTOSTART, box.size.x * 0.75f, box.size.y * 0.85f,
+            box.size.x * 0.5f, box.size.y * 0.25f);
     }
 
     // draw
@@ -297,7 +438,7 @@ struct MidiClockDisplay : widget::TransparentWidget {
 
         // output divider
         nvgText(args.vg, box.size.x * 0.25f, box.size.y * 0.85f,
-            putils::format("%d", source->midiClockDisplayGetOutputDiv()).c_str(), NULL);
+            putils::format("d: 1/%d", source->midiClockDisplayGetOutputDiv()).c_str(), NULL);
 
         // autostart enable
         if(source->midiClockDisplayIsAutostartEnabled()) {
@@ -320,12 +461,70 @@ struct MidiClockDisplay : widget::TransparentWidget {
     }
 
     void onHoverScroll(const event::HoverScroll& e) override {
+        float change = 1.0f;
         if(source) {
-//            source->dispOnHoverScroll(id, e);
+            if(e.scrollDelta.y < 0.0f) {
+                change *= -1.0f;
+            }
+            int id = touchZones.findTouch(e.pos);
+            switch(id) {
+                case ZONE_TEMPO:
+                    if(shift) change *= 0.1f;
+                    source->midiClockAdjustTempo(change);
+                    break;
+                case ZONE_DIV:
+                    source->midiClockAdjustOutputDiv(change);
+                    break;
+            }
             e.consume(NULL);
             return;
         }
         TransparentWidget::onHoverScroll(e);
+    }
+
+    void onButton(const event::Button& e) override {
+        if(e.action == GLFW_RELEASE) {
+            return;
+        }
+        if(source) {
+            int id = touchZones.findTouch(e.pos);
+            switch(id) {
+                case ZONE_TEMPO:
+                    source->midiClockTapTempo();
+                    break;
+                case ZONE_RUNSTOP:
+                    source->midiClockToggleRunState();
+                    break;
+                case ZONE_AUTOSTART:
+                    source->midiClockToggleAutostart();
+                    break;
+            }
+            e.consume(NULL);
+            return;
+        }
+    }
+
+    void onHoverKey(const event::HoverKey& e) override {
+        if(e.key == GLFW_KEY_LEFT_SHIFT || e.key == GLFW_KEY_RIGHT_SHIFT) {
+            if(e.action == GLFW_PRESS) {
+                shift = 1;
+            }
+            else if(e.action == GLFW_RELEASE) {
+                shift = 0;
+            }
+        }
+        TransparentWidget::onHoverKey(e);
+    }
+
+    // must do this so we get leave events
+    void onHover(const HoverEvent& e) override {
+        e.consume(this);
+        TransparentWidget::onHover(e);
+    }
+
+    void onLeave(const event::Leave& e) override {
+        shift = 0;
+        TransparentWidget::onLeave(e);
     }
 };
 

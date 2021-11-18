@@ -20,7 +20,7 @@ public:
     virtual void midiClockBeatCrossed(void) { }
 
     // run state changed
-    virtual void midiClockRunStateChanged(int running) { }
+    virtual void midiClockRunStateChanged(int running, int reset) { }
 
     // clock source changed
     virtual void midiClockSourceChanged(int source) { }

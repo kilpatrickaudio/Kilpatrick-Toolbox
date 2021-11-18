@@ -167,6 +167,12 @@ struct KilpatrickButton : SvgSwitch {
         SvgSwitch::onHoverKey(e);
     }
 
+    // must do this so we get leave events
+    void onHover(const HoverEvent& e) override {
+        e.consume(this);
+        SvgSwitch::onHover(e);
+    }
+
     void onLeave(const event::Leave& e) override {
         mapKey = 0;
         latchKey = 0;
@@ -280,6 +286,12 @@ struct KilpatrickKnob : SvgKnob {
             mapKey = 1;
         }
         SvgKnob::onHoverKey(e);
+    }
+
+    // must do this so we get leave events
+    void onHover(const HoverEvent& e) override {
+        e.consume(this);
+        SvgKnob::onHover(e);
     }
 
     void onLeave(const event::Leave& e) override {
@@ -404,6 +416,12 @@ struct KilpatrickSlidePot : app::SvgSlider {
             mapKey = 1;
         }
         SvgSlider::onHoverKey(e);
+    }
+
+    // must do this so we get leave events
+    void onHover(const HoverEvent& e) override {
+        e.consume(this);
+        SvgSlider::onHover(e);
     }
 
     void onLeave(const event::Leave& e) override {
@@ -984,6 +1002,12 @@ struct KilpatrickJoystick : widget::OpaqueWidget {
             PDEBUG("snap");
             snap = 1;
         }
+    }
+
+    // must do this so we get leave events
+    void onHover(const HoverEvent& e) override {
+        e.consume(this);
+        OpaqueWidget::onHover(e);
     }
 
     void onLeave(const event::Leave& e) override {
