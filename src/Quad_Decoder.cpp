@@ -459,7 +459,7 @@ struct Quad_DecoderWidget : ModuleWidget {
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(17.74, 105.208)), module, Quad_Decoder::MULTI_OUT_LED));
 	}
 
-    // add menu items to select which memory slot we use
+    // add menu items
     void appendContextMenu(Menu *menu) override {
         Quad_Decoder *module = dynamic_cast<Quad_Decoder*>(this->module);
         if(!module) {

@@ -158,6 +158,15 @@
         "Clock",
         "Utility"
       ]
+    },
+    {
+      "slug": "MIDI_CC_Note",
+      "name": "MIDI CC Note",
+      "description": "MIDI CC to Note Converter with vMIDI Support",
+      "tags": [
+        "MIDI",
+        "Utility"
+      ]
     }
   ]
 }

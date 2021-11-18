@@ -347,7 +347,7 @@ struct Quad_EncoderWidget : ModuleWidget {
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(24.24, 110.5)), module, Quad_Encoder::RT_OUT_LED));
 	}
 
-    // add menu items to select which memory slot we use
+    // add menu items
     void appendContextMenu(Menu *menu) override {
         Quad_Encoder *module = dynamic_cast<Quad_Encoder*>(this->module);
         if(!module) {

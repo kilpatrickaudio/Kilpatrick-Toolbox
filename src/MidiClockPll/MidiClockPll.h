@@ -83,6 +83,7 @@ private:
     int32_t stopTickCount;  // stopped tick count
     int32_t intUsPerBeat;  // master tempo setting value
     int32_t intUsPerTick;  // number of us per tick (internal)
+    int64_t intLastTickTime;  // time of last internal tick
     // external clock recovery state
     int32_t extIntervalHist[EXT_HIST_LEN];
     int32_t extIntervalCount;  // number of historical intervals measured

@@ -43,6 +43,7 @@ extern Model* modelMIDI_Output;
 extern Model* modelMIDI_CV;
 extern Model* modelMIDI_Channel;
 extern Model* modelMIDI_Clock;
+extern Model* modelMIDI_CC_Note;
 extern Model* modelMulti_Meter;
 
 // settings

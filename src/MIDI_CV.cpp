@@ -414,7 +414,7 @@ struct MIDI_CVWidget : ModuleWidget {
         addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(3.81, 102.15)), module, MIDI_CV::V3_OUT_LED));
 	}
 
-    // add menu items to select which memory slot we use
+    // add menu items
     void appendContextMenu(Menu *menu) override {
         MIDI_CV *module = dynamic_cast<MIDI_CV*>(this->module);
         if(!module) {

@@ -220,7 +220,7 @@ struct Quad_PannerWidget : ModuleWidget {
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(52.48, 104.5)), module, Quad_Panner::SR_CV_LED));
 	}
 
-    // add menu items to select which memory slot we use
+    // add menu items
     void appendContextMenu(Menu *menu) override {
         Quad_Panner *module = dynamic_cast<Quad_Panner*>(this->module);
         if(!module) {

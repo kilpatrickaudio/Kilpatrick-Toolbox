@@ -23,6 +23,7 @@
 #include "plugin.hpp"
 #include "utils/CVMidi.h"
 #include "utils/KAComponents.h"
+#include "utils/MenuHelper.h"
 #include "utils/MidiHelper.h"
 #include "utils/PLog.h"
 #include "utils/PUtils.h"
@@ -36,6 +37,9 @@ struct MidiClockDisplaySource {
 
     // get whether internal clock source is used
     virtual int midiClockDisplayIsSourceInternal(void) { return 1; }
+
+    // get whether the source is synced
+    virtual int midiClockDisplayIsSourceSynced(void) { return 1; }
 
     // get whether clock is running
     virtual int midiClockDisplayIsRunning(void) { return 0; }
@@ -60,22 +64,28 @@ struct MidiClockDisplaySource {
 
     // toggle run state
     virtual void midiClockToggleRunState(void) { }
+
+    // toggle int/ext source
+    virtual void midiClockToggleSource(void) { }
 };
 
 struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 	enum ParamId {
 		RESET_SW,
 		RUNSTOP_SW,
+        TEMPO,  // 30.0 to 300.0 = BPM
         OUTPUT_DIV,  // 1.0-24.0 = divide ratio
         AUTOSTART_EN,  // 0 = disable, 1.0 = enable
+        CLOCK_SOURCE,  // 0 = ext, 1 = int
+        RUN_IN_MODE,  // 0 = momentary, 1 = run, 2 = toggle
 		PARAMS_LEN
 	};
 	enum InputId {
+        RUN_IN,
+		STOP_IN,
 		CLOCK_IN,
-		MIDI_IN,
-		TEMPO_IN,
-		RUN_IN,
 		RESET_IN,
+        MIDI_IN,
 		INPUTS_LEN
 	};
 	enum OutputId {
@@ -85,13 +95,13 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 		OUTPUTS_LEN
 	};
 	enum LightId {
-		CLOCK_IN_LED,
+        RUN_IN_LED,
+        STOP_IN_LED,
+        CLOCK_IN_LED,
+        RESET_IN_LED,
 		MIDI_IN_LED,
-		TEMPO_IN_LED,
 		MIDI_OUT_LED,
-		RUN_IN_LED,
 		CLOCK_OUT_LED,
-		RESET_IN_LED,
 		RESET_OUT_LED,
 		LIGHTS_LEN
 	};
@@ -99,30 +109,50 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     static constexpr int OUTPUT_DIV_MAX = 24;
     static constexpr int OUT_PULSE_LEN = 4;
     static constexpr int LED_PULSE_LEN = 50;
+    static constexpr int ANALOG_CLOCK_TIMEOUT = 2000;
+    static constexpr int RUN_IN_IGNORE_TIMEOUT = 50;
     dsp::ClockDivider taskTimer;
     CVMidi *cvMidiIn;
     CVMidi *cvMidiOut;
     putils::PosEdgeDetect resetSwEdge;
     putils::PosEdgeDetect runstopSwEdge;
+    putils::PosEdgeDetect runInEdge;
+    putils::PosEdgeDetect stopInEdge;
+    putils::PosEdgeDetect clockInEdge;
+    putils::PosEdgeDetect resetInEdge;
+    putils::Pulser runInIgnoreTimeout;
+    putils::Pulser runInLedPulse;
+    putils::Pulser stopInLedPulse;
+    putils::Pulser clockInLedPulse;
+    putils::Pulser resetInLedPulse;
     putils::Pulser clockOutPulse;
     putils::Pulser resetOutPulse;
-    putils::Pulser clockLedPulse;
-    putils::Pulser resetLedPulse;
+    putils::Pulser clockOutLedPulse;
+    putils::Pulser resetOutLedPulse;
+    putils::Pulser analogClockTimeout;
     MidiClockPll midiClock;
     int outputDiv;  // current running output divider ratio
     int outputDivCount;
+    enum RunInMode {
+        RUNSTOP_MOMENTARY = 0,
+        RUNSTOP_RUN,
+        RUNSTOP_TOGGLE,
+    };
 
     // constructor
 	MIDI_Clock() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
 		configParam(RESET_SW, 0.f, 1.f, 0.f, "RESET");
 		configParam(RUNSTOP_SW, 0.f, 1.f, 0.f, "RUN/STOP");
+        configParam(TEMPO, 30.0f, 300.0f, 120.0f, "TEMPO");
         configParam(OUTPUT_DIV, 1.0f, 24.0f, 1.0f, "OUTPUT DIV");
         configParam(AUTOSTART_EN, 0.0f, 1.0f, 0.0f, "AUTOSTART");
+        configParam(CLOCK_SOURCE, 0.0f, 1.0f, 1.0f, "SOURCE");
+        configParam(RUN_IN_MODE, 0.0f, 2.0f, 0.0f, "RUN IN MODE");
 		configInput(CLOCK_IN, "CLOCK IN");
 		configInput(MIDI_IN, "MIDI IN");
-		configInput(TEMPO_IN, "TEMPO IN");
-		configInput(RUN_IN, "RUN IN");
+        configInput(RUN_IN, "RUN IN");
+		configInput(STOP_IN, "STOP IN");
 		configInput(RESET_IN, "RESET IN");
 		configOutput(MIDI_OUT, "MIDI OUT");
 		configOutput(CLOCK_OUT, "CLOCK OUT");
@@ -144,6 +174,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 
     // process a sample
 	void process(const ProcessArgs& args) override {
+        float tempf;
         // handle CV MIDI
         cvMidiIn->process();
         cvMidiOut->process();
@@ -163,6 +194,61 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
                 }
             }
 
+            // handle run in
+            if(inputs[RUN_IN].isConnected() && !runInIgnoreTimeout.update()) {
+                tempf = inputs[RUN_IN].getVoltage();
+                lights[RUN_IN_LED].setBrightness(tempf * 0.2f);
+                switch((int)params[RUN_IN_MODE].getValue()) {
+                    case RUNSTOP_MOMENTARY:
+                        // run
+                        if(tempf > 1.0f && !midiClock.getRunState()) {
+                            midiClock.continueRequest();
+                        }
+                        // stop
+                        else if(tempf < 1.0f && midiClock.getRunState()) {
+                            midiClock.stopRequest();
+                        }
+                        break;
+                    case RUNSTOP_RUN:
+                        // run
+                        if(tempf > 1.0f && !midiClock.getRunState()) {
+                            midiClock.continueRequest();
+                        }
+                        break;
+                    case RUNSTOP_TOGGLE:
+                        if(runInEdge.update(tempf > 1.0f)) {
+                            if(midiClock.getRunState()) {
+                                midiClock.stopRequest();
+                            }
+                            else {
+                                midiClock.continueRequest();
+                            }
+                        }
+                        break;
+                }
+                runInIgnoreTimeout.timeout = RUN_IN_IGNORE_TIMEOUT;
+            }
+
+            // handle stop in
+            if(stopInEdge.update(inputs[STOP_IN].getVoltage() > 1.0f)) {
+                midiClock.stopRequest();
+                stopInLedPulse.timeout = LED_PULSE_LEN;
+            }
+
+            // clock and reset inputs - takes precedence over MIDI input
+            if(clockInEdge.update(inputs[CLOCK_IN].getVoltage() > 1.0f)) {
+                analogClockTimeout.timeout = ANALOG_CLOCK_TIMEOUT;
+                midiClock.handleMidiTick();
+                clockInLedPulse.timeout = LED_PULSE_LEN;
+            }
+            if(resetInEdge.update(inputs[RESET_IN].getVoltage() > 1.0f)) {
+                analogClockTimeout.timeout = ANALOG_CLOCK_TIMEOUT;
+                midiClock.resetRequest();
+                resetInLedPulse.timeout = LED_PULSE_LEN;
+            }
+            analogClockTimeout.update();  // time out the analog clock
+            handleMidiInput();
+
             // run the MIDI clock
             midiClock.timerTask();
 
@@ -170,12 +256,18 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
             outputs[CLOCK_OUT].setVoltage((clockOutPulse.update() != 0) * 10.0f);
             outputs[RESET_OUT].setVoltage((resetOutPulse.update() != 0) * 10.0f);
 
-            lights[CLOCK_OUT_LED].setBrightness(clockLedPulse.update() != 0);
-            lights[RESET_OUT_LED].setBrightness(resetLedPulse.update() != 0);
-
-            // MIDI LEDs
+            // LEDs
+            lights[CLOCK_IN_LED].setBrightness(clockInLedPulse.update() != 0);
+            lights[RESET_IN_LED].setBrightness(resetInLedPulse.update() != 0);
+            lights[CLOCK_OUT_LED].setBrightness(clockOutLedPulse.update() != 0);
+            lights[RESET_OUT_LED].setBrightness(resetOutLedPulse.update() != 0);
             lights[MIDI_IN_LED].setBrightness(cvMidiIn->getLedState());
             lights[MIDI_OUT_LED].setBrightness(cvMidiOut->getLedState());
+
+            // update source param
+            if((int)params[CLOCK_SOURCE].getValue() != midiClock.getSource()) {
+                params[CLOCK_SOURCE].setValue(midiClock.getSource());
+            }
         }
 	}
 
@@ -186,6 +278,10 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 
     // module initialize
     void onReset(void) override {
+        midiClock.setSource((int)params[CLOCK_SOURCE].getValue());
+        midiClock.setTempo(params[TEMPO].getValue());
+        outputDiv = (int)params[OUTPUT_DIV].getValue();
+        outputDivCount = 0;
     }
 
     // module added (post initialize)
@@ -194,10 +290,42 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
             midiClock.resetRequest();
             midiClock.continueRequest();
         }
-        outputDiv = (int)params[OUTPUT_DIV].getValue();
-        outputDivCount = 0;
+        onReset();
     }
 
+    // handle MIDI input
+    void handleMidiInput(void) {
+        midi::Message msg;
+        if(cvMidiIn->getInputMessage(&msg)) {
+            if(analogClockTimeout.timeout) {
+                return;
+            }
+            if(msg.getSize() != 1) {
+                return;
+            }
+            switch(msg.bytes[0]) {
+                case MIDI_TIMING_TICK:
+                    midiClock.handleMidiTick();
+                    break;
+                case MIDI_CLOCK_START:
+                    midiClock.handleMidiStart();
+                    break;
+                case MIDI_CLOCK_CONTINUE:
+                    midiClock.handleMidiContinue();
+                    break;
+                case MIDI_CLOCK_STOP:
+                    midiClock.handleMidiStop();
+                    break;
+            }
+        }
+    }
+
+    // update stored tempo
+    void updateTempoParam(void) {
+        if(midiClock.getSource() == MidiClockPll::SOURCE_INTERNAL) {
+            params[TEMPO].setValue(midiClock.getTempo());
+        }
+    }
 
     //
     // MIDI clock callbacks
@@ -205,7 +333,6 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     // a beat was crossed
     void midiClockBeatCrossed(void) override {
         int temp;
-//        PDEBUG("BEAT!");
         temp = (int)params[OUTPUT_DIV].getValue();
         if(outputDiv != temp) {
             outputDiv = temp;
@@ -216,7 +343,6 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     // run state changed
     void midiClockRunStateChanged(int running, int reset) override {
         midi::Message msg;
-//        PDEBUG("run state: %d - reset: %d", running, reset);
         msg.setSize(1);
         if(running) {
             if(reset) {
@@ -232,14 +358,9 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
         cvMidiOut->sendOutputMessage(msg);
     }
 
-    // clock source changed
-    void midiClockSourceChanged(int source) override {
-        PDEBUG("clock source: %d", source);
-    }
-
     // tap tempo locked
     void midiClockTapTempoLocked(void) override {
-        PDEBUG("tap tempo locked!");
+        updateTempoParam();
     }
 
     // clock ticked
@@ -254,7 +375,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
         if(midiClock.getRunState()) {
             if(outputDivCount == 0) {
                 clockOutPulse.timeout = OUT_PULSE_LEN;
-                clockLedPulse.timeout = LED_PULSE_LEN;
+                clockOutLedPulse.timeout = LED_PULSE_LEN;
             }
             outputDivCount ++;
             if(outputDivCount == outputDiv) {
@@ -267,7 +388,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     void midiClockPositionReset(void) override {
         midi::Message msg;
         resetOutPulse.timeout = OUT_PULSE_LEN;
-        resetLedPulse.timeout = LED_PULSE_LEN;
+        resetOutLedPulse.timeout = LED_PULSE_LEN;
         outputDivCount = 0;
 
         // MIDI out
@@ -276,14 +397,21 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
         cvMidiOut->sendOutputMessage(msg);
     }
 
-    // externally locked tempo changed
-    void midiClockExtTempoChanged(void) override {
-        PDEBUG("ext tempo changed");
-    }
-
     // external sync state changed
     void midiClockExtSyncChanged(int synced) override {
-        PDEBUG("ext sync changed: %d", synced);
+        if((int)params[AUTOSTART_EN].getValue()) {
+            midiClock.continueRequest();
+        }
+    }
+
+    // get the run in mode
+    int getRunInMode(void) {
+        return (int)params[RUN_IN_MODE].getValue();
+    }
+
+    // set the run in mode
+    void setRunInMode(int mode) {
+        params[RUN_IN_MODE].setValue(mode);
     }
 
     //
@@ -300,6 +428,11 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
             return 1;
         }
         return 0;
+    }
+
+    // get whether the source is synced
+    int midiClockDisplayIsSourceSynced(void) override {
+        return midiClock.isExtSynced();
     }
 
     // get whether clock is running
@@ -325,6 +458,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     // adjust the tempo
     void midiClockAdjustTempo(float change) override {
         midiClock.setTempo(midiClock.getTempo() + change);
+        updateTempoParam();
     }
 
     // adjust the output divider
@@ -353,6 +487,16 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
             midiClock.continueRequest();
         }
     }
+
+    // toggle int/ext source
+    void midiClockToggleSource(void) override {
+        if(midiClock.getSource() == MidiClockPll::SOURCE_INTERNAL) {
+            midiClock.setSource(MidiClockPll::SOURCE_EXTERNAL);
+        }
+        else {
+            midiClock.setSource(MidiClockPll::SOURCE_INTERNAL);
+        }
+    }
 };
 
 // MIDI clock display
@@ -362,6 +506,8 @@ struct MidiClockDisplay : widget::TransparentWidget {
     NVGcolor textColor;
     NVGcolor runColor;
     NVGcolor stopColor;
+    NVGcolor extSyncColor;
+    NVGcolor extLossColor;
     NVGcolor bgColor;
     std::string fontFilename;
     float fontSizeSmall;
@@ -382,12 +528,14 @@ struct MidiClockDisplay : widget::TransparentWidget {
         rad = mm2px(2.0);
         box.pos = pos.minus(size.div(2));
         box.size = size;
-        textColor = nvgRGB(0xe0, 0xe0, 0xe0);
+        textColor = nvgRGB(0xff, 0xff, 0xff);
         runColor = nvgRGB(0x00, 0xff, 0x00);
         stopColor = nvgRGB(0xcc, 0xcc, 0xcc);
+        extLossColor = nvgRGB(0xff, 0x00, 0x00);
+        extSyncColor = nvgRGB(0x00, 0xff, 0xff);
         bgColor = nvgRGBA(0x00, 0x00, 0x00, 0xff);
         fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
-        fontSizeSmall = 10.0f;
+        fontSizeSmall = 11.0f;
         fontSizeLarge = 18.0f;
         shift = 0;
         // add touch zones
@@ -428,17 +576,25 @@ struct MidiClockDisplay : widget::TransparentWidget {
             putils::format("%3.1f", source->midiClockDisplayGetTempo()).c_str(), NULL);
 
         nvgFontSize(args.vg, fontSizeSmall);
+
         // int/ext state
         if(source->midiClockDisplayIsSourceInternal()) {
             nvgText(args.vg, box.size.x * 0.75f, box.size.y * 0.15f, "INT", NULL);
         }
         else {
+            if(source->midiClockDisplayIsSourceSynced()) {
+                nvgFillColor(args.vg, extSyncColor);
+            }
+            else {
+                nvgFillColor(args.vg, extLossColor);
+            }
             nvgText(args.vg, box.size.x * 0.75f, box.size.y * 0.15f, "EXT", NULL);
         }
 
         // output divider
+        nvgFillColor(args.vg, textColor);
         nvgText(args.vg, box.size.x * 0.25f, box.size.y * 0.85f,
-            putils::format("d: 1/%d", source->midiClockDisplayGetOutputDiv()).c_str(), NULL);
+            putils::format("d:1/%d", source->midiClockDisplayGetOutputDiv()).c_str(), NULL);
 
         // autostart enable
         if(source->midiClockDisplayIsAutostartEnabled()) {
@@ -498,6 +654,9 @@ struct MidiClockDisplay : widget::TransparentWidget {
                 case ZONE_AUTOSTART:
                     source->midiClockToggleAutostart();
                     break;
+                case ZONE_INTEXT:
+                    source->midiClockToggleSource();
+                    break;
             }
             e.consume(NULL);
             return;
@@ -528,6 +687,24 @@ struct MidiClockDisplay : widget::TransparentWidget {
     }
 };
 
+// handle choosing the run in mode
+struct MIDIClockRunModeMenuItem : MenuItem {
+    MIDI_Clock *module;
+    int mode;
+
+    MIDIClockRunModeMenuItem(Module *module, int mode, std::string name) {
+        this->module = dynamic_cast<MIDI_Clock*>(module);
+        this->mode = mode;
+        this->text = name;
+        this->rightText = CHECKMARK(this->module->getRunInMode() == mode);
+    }
+
+    // the menu item was selected
+    void onAction(const event::Action &e) override {
+        this->module->setRunInMode(mode);
+    }
+};
+
 struct MIDI_ClockWidget : ModuleWidget {
 	MIDI_ClockWidget(MIDI_Clock* module) {
 		setModule(module);
@@ -545,25 +722,40 @@ struct MIDI_ClockWidget : ModuleWidget {
         addParam(createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(13.32, 40.446)), module, MIDI_Clock::RESET_SW));
         addParam(createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(27.32, 40.446)), module, MIDI_Clock::RUNSTOP_SW));
 
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(11.32, 60.5)), module, MIDI_Clock::CLOCK_IN));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(11.32, 60.5)), module, MIDI_Clock::RUN_IN));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(29.32, 60.5)), module, MIDI_Clock::MIDI_IN));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(11.32, 76.5)), module, MIDI_Clock::TEMPO_IN));
-		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(11.32, 92.5)), module, MIDI_Clock::RUN_IN));
+		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(11.32, 76.5)), module, MIDI_Clock::STOP_IN));
+        addInput(createInputCentered<PJ301MPort>(mm2px(Vec(11.32, 92.5)), module, MIDI_Clock::CLOCK_IN));
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(11.32, 108.5)), module, MIDI_Clock::RESET_IN));
 
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(29.32, 76.516)), module, MIDI_Clock::MIDI_OUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(29.32, 92.5)), module, MIDI_Clock::CLOCK_OUT));
 		addOutput(createOutputCentered<PJ301MPort>(mm2px(Vec(29.32, 108.5)), module, MIDI_Clock::RESET_OUT));
 
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(18.728, 60.5)), module, MIDI_Clock::CLOCK_IN_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(36.728, 60.5)), module, MIDI_Clock::MIDI_IN_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(18.728, 76.5)), module, MIDI_Clock::TEMPO_IN_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(18.728, 60.5)), module, MIDI_Clock::RUN_IN_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(36.728, 60.5)), module, MIDI_Clock::MIDI_IN_LED));
+		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(18.728, 76.5)), module, MIDI_Clock::STOP_IN_LED));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(36.728, 76.5)), module, MIDI_Clock::MIDI_OUT_LED));
-		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(18.728, 92.5)), module, MIDI_Clock::RUN_IN_LED));
+        addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(18.728, 92.5)), module, MIDI_Clock::CLOCK_IN_LED));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(36.728, 92.5)), module, MIDI_Clock::CLOCK_OUT_LED));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(18.728, 108.5)), module, MIDI_Clock::RESET_IN_LED));
 		addChild(createLightCentered<MediumLight<RedLight>>(mm2px(Vec(36.728, 108.5)), module, MIDI_Clock::RESET_OUT_LED));
 	}
+
+    // add menu items
+    void appendContextMenu(Menu *menu) override {
+        MIDI_Clock *module = dynamic_cast<MIDI_Clock*>(this->module);
+        if(!module) {
+            return;
+        }
+
+        // mode
+        menuHelperAddSpacer(menu);
+        menuHelperAddLabel(menu, "Run In Mode");
+        menuHelperAddItem(menu, new MIDIClockRunModeMenuItem(module, MIDI_Clock::RUNSTOP_MOMENTARY, "Momentary"));
+        menuHelperAddItem(menu, new MIDIClockRunModeMenuItem(module, MIDI_Clock::RUNSTOP_RUN, "Run"));
+        menuHelperAddItem(menu, new MIDIClockRunModeMenuItem(module, MIDI_Clock::RUNSTOP_TOGGLE, "Toggle"));
+    }
 };
 
 Model* modelMIDI_Clock = createModel<MIDI_Clock, MIDI_ClockWidget>("MIDI_Clock");

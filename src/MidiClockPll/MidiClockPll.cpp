@@ -26,6 +26,7 @@ MidiClockPll::MidiClockPll() {
     extTickf = 0;
     timeCount = 0;
     nextTickTime = 0;
+    intLastTickTime = 0;
     // internal clock state
     runTickCount = 0;
     stopTickCount = 0;
@@ -65,7 +66,7 @@ void MidiClockPll::setInternalPpq(int ppq) {
 
 // run the timer task
 void MidiClockPll::timerTask(void) {
-    int i, error;
+    int i, extDriftError, extPhaseError;
     uint32_t tick_count;
     int32_t temp;
 
@@ -99,6 +100,10 @@ void MidiClockPll::timerTask(void) {
             handler->midiClockSourceChanged(source);
         }
         changeRunState(0);  // force stop
+        // switching to internal source - reset the tempo
+        if(source == SOURCE_INTERNAL) {
+            setTempo(getTempo());
+        }
     }
 
     // run clock timebase
@@ -125,11 +130,6 @@ void MidiClockPll::timerTask(void) {
             if(handler != NULL) {
                 handler->midiClockBeatCrossed();
             }
-//            // XXX debug
-//            log_debug("us: %d - run_tick: %d - ext_run_tick: %d - diff: %d",
-//                intUsPerTick,
-//                runTickCount, extRunTickCount,
-//                (runTickCount - extRunTickCount));
         }
         if(handler != NULL) {
             handler->midiClockTicked(tick_count);
@@ -137,6 +137,7 @@ void MidiClockPll::timerTask(void) {
 
         tick_count ++;
         nextTickTime += intUsPerTick;
+        intLastTickTime = timeCount;
         // write back the tick count
         if(runState) {
             runTickCount = tick_count;
@@ -154,6 +155,7 @@ void MidiClockPll::timerTask(void) {
             // ext sync started
             if(!extSyncTimeout && handler != NULL) {
                 handler->midiClockExtSyncChanged(1);
+                extRunTickCount = runTickCount;
             }
             extSyncTimeout = EXT_SYNC_TIMEOUT;
             // measure interval - skip the very first time since it will be wrong
@@ -176,21 +178,39 @@ void MidiClockPll::timerTask(void) {
                 extSyncTempoAverage = ((float)extSyncTempoAverage *
                     EXT_SYNC_TEMPO_FILTER) +
                     ((float)intUsPerTick * (1.0 - EXT_SYNC_TEMPO_FILTER ));
-            }
-            // count external ticks if running
-            if(runState) {
-                extRunTickCount += midiClockUpsample;
-                // compensate for error
-                error = runTickCount - extRunTickCount;
-                if(error < 0) {
-                    intUsPerTick -= EXT_ERROR_ADJ;
-                }
-                else if(error > 0) {
-                    intUsPerTick += EXT_ERROR_ADJ;
-                }
+                // use smoothed value
+                intUsPerTick = extSyncTempoAverage;
             }
             extLastTickTime = timeCount;
             extIntervalCount ++;
+
+            // adjust drift and phase if running
+            if(runState) {
+                extRunTickCount += midiClockUpsample;
+//                PDEBUG("eta: %d - us: %d", extSyncTempoAverage, intUsPerTick);
+                // compensate for drift error
+                extDriftError = runTickCount - extRunTickCount;
+                if(extDriftError < 0) {
+                    intUsPerTick -= EXT_ERROR_ADJ;
+                }
+                else if(extDriftError > 0) {
+                    intUsPerTick += EXT_ERROR_ADJ;
+                }
+                // compare for phase error
+                extPhaseError = intLastTickTime - extLastTickTime;
+                // + phase means internal is ahead of ext, - phase means int is behind ext
+                // only adjust if drift is zero
+                if(extDriftError == 0) {
+//                    PDEBUG("drift: %d - phase: %d", extDriftError, extPhaseError);
+                    if(extPhaseError < 0) {
+                        intUsPerTick += EXT_ERROR_ADJ;
+                    }
+                    else if(extPhaseError > 0) {
+                        intUsPerTick -= EXT_ERROR_ADJ;
+                    }
+                }
+            }
+
         }
     }
 
@@ -253,10 +273,10 @@ int MidiClockPll::getSource(void) {
 // set the MIDI clock source
 void MidiClockPll::setSource(int source) {
     if(source == SOURCE_INTERNAL) {
-        this->source = SOURCE_INTERNAL;
+        this->desiredSource = SOURCE_INTERNAL;
     }
     else {
-        this->source = SOURCE_EXTERNAL;
+        this->desiredSource = SOURCE_EXTERNAL;
     }
 }
 
@@ -270,7 +290,7 @@ int MidiClockPll::isExtSynced(void) {
 
 // get the clock tempo
 float MidiClockPll::getTempo(void) {
-    if(isExtSynced()) {
+    if(source == SOURCE_EXTERNAL) {
         return 60000000.0f / (float)clockInternalPpq / (float)extSyncTempoAverage;
     }
     return 60000000.0f / (float)intUsPerBeat;
@@ -280,7 +300,6 @@ float MidiClockPll::getTempo(void) {
 void MidiClockPll::setTempo(float tempo) {
     intUsPerBeat = (int32_t)(60000000.0f / tempo);
     intUsPerTick = intUsPerBeat / clockInternalPpq;
-    PDEBUG("intUsPerTick: %d", intUsPerTick);
 }
 
 // handle tap tempo

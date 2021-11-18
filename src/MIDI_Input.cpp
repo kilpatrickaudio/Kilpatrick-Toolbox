@@ -178,7 +178,7 @@ struct MIDI_InputWidget : ModuleWidget {
         addChild(l);
 	}
 
-    // add menu items to select which memory slot we use
+    // add menu items
     void appendContextMenu(Menu *menu) override {
         MIDI_Input *module = dynamic_cast<MIDI_Input*>(this->module);
         if(!module) {
