@@ -15,22 +15,10 @@
    viewBox="0 0 40.639999 128.5"
    version="1.1"
    id="svg951"
-   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
    sodipodi:docname="MIDI_Monitor.svg">
   <defs
      id="defs945">
-    <linearGradient
-       inkscape:collect="always"
-       id="linearGradient1635">
-      <stop
-         style="stop-color:#2c2c58;stop-opacity:1"
-         offset="0"
-         id="stop1631" />
-      <stop
-         style="stop-color:#37375a;stop-opacity:1"
-         offset="1"
-         id="stop1633" />
-    </linearGradient>
     <linearGradient
        inkscape:collect="always"
        xlink:href="#linearGradient1109"
@@ -53,16 +41,6 @@
          offset="1"
          id="stop1107" />
     </linearGradient>
-    <linearGradient
-       inkscape:collect="always"
-       xlink:href="#linearGradient1635"
-       id="linearGradient1637"
-       x1="25.4"
-       y1="35.405956"
-       x2="25.4"
-       y2="14.428279"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(0.79499582,0,0,1.2719935,0.12710467,-1.8489532)" />
     <clipPath
        id="clipPath899"
        clipPathUnits="userSpaceOnUse">
@@ -80,13 +58,13 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.7"
-     inkscape:cx="190.62387"
-     inkscape:cy="143.15431"
+     inkscape:cx="-37.233273"
+     inkscape:cy="137.44002"
      inkscape:document-units="mm"
      inkscape:current-layer="layer2"
      showgrid="false"
      inkscape:window-width="1920"
-     inkscape:window-height="1033"
+     inkscape:window-height="1025"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -196,7 +174,7 @@
      inkscape:label="Layer 1"
      style="display:inline">
     <rect
-       style="opacity:1;fill:url(#linearGradient1637);fill-opacity:1;stroke:#000000;stroke-width:0.2001666;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="opacity:1;fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.2001666;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="rect1627"
        width="31.799833"
        height="31.799833"

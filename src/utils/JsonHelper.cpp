@@ -7,7 +7,7 @@
  * Please see the license file included with this repo for license details.
  *
  */
- #include "../plugin.hpp"
+#include "../plugin.hpp"
 #include "JsonHelper.h"
 
 // looks up an array and copies len items to dest

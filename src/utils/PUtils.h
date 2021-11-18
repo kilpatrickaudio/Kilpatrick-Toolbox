@@ -181,24 +181,6 @@ inline std::string format(std::string format, ...) {
     return &vec[0];
 }
 
-// read a return a line from a file - returns -1 on error or EOF
-inline int readline(FILE *file, std::string *line) {
-/*
-    char *str = NULL;
-    size_t len = 0;
-    int ret;
-    ret = std::getline(&str, &len, file);
-    if(ret < 1) {
-        *line = "";
-        return -1;
-    }
-    *line = str;
-    std::free(str);
-    return ret;
-*/
-    return -1;  // implement in cross-platform way
-}
-
 };
 
 #endif

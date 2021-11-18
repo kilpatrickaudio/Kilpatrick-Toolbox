@@ -43,5 +43,6 @@ void init(Plugin* p) {
     p->addModel(modelMIDI_Output);
     p->addModel(modelMIDI_CV);
     p->addModel(modelMIDI_Channel);
+    p->addModel(modelMIDI_Clock);
     p->addModel(modelMulti_Meter);
 }

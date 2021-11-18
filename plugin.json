@@ -117,7 +117,8 @@
       "description": "Quad Panner",
       "manualUrl": "https://github.com/kilpatrickaudio/Kilpatrick-Toolbox#quad_panner",
       "tags": [
-        "Panning"
+        "Panning",
+        "Utility"
       ]
     },
     {
@@ -146,6 +147,16 @@
       "tags": [
         "Utility",
         "Metering"
+      ]
+    },
+    {
+      "slug": "MIDI_Clock",
+      "name": "MIDI Clock",
+      "description": "MIDI with Analog and vMIDI Support",
+      "tags": [
+        "MIDI",
+        "Clock",
+        "Utility"
       ]
     }
   ]

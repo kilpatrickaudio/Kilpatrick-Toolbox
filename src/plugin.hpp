@@ -42,6 +42,7 @@ extern Model* modelMIDI_Input;
 extern Model* modelMIDI_Output;
 extern Model* modelMIDI_CV;
 extern Model* modelMIDI_Channel;
+extern Model* modelMIDI_Clock;
 extern Model* modelMulti_Meter;
 
 // settings
@@ -49,6 +50,6 @@ extern NVGcolor MIDI_LABEL_FG_COLOR;
 extern NVGcolor MIDI_LABEL_BG_COLOR;
 #define PITCH_GATE_SMOOTHING (1.0 / 10000.0f);  // smothing for pitch and gate
 #define CC_CV_SMOOTHING (1.0 / 100.0f)  // smoothing for CC to CV
-#define MIDI_RT_TASK_RATE 4000  // MIDI handler rate
+#define MIDI_RT_TASK_RATE 1000  // MIDI handler rate
 
 #define PLATFORM_VCV

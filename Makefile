@@ -13,6 +13,7 @@ LDFLAGS +=
 # Add .cpp files to the build
 SOURCES += $(wildcard src/*.cpp)
 SOURCES += $(wildcard src/Midi2Note/*.cpp)
+SOURCES += $(wildcard src/MidiClockPll/*.cpp)
 SOURCES += $(wildcard src/utils/*.cpp)
 
 # Add files to the ZIP package when running `make dist`
