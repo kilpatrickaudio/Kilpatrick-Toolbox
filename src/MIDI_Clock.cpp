@@ -109,6 +109,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     static constexpr int OUTPUT_DIV_MAX = 24;
     static constexpr int OUT_PULSE_LEN = 4;
     static constexpr int LED_PULSE_LEN = 50;
+    static constexpr int AUTOSTART_TIMEOUT = 50;
     static constexpr int ANALOG_CLOCK_TIMEOUT = 2000;
     static constexpr int RUN_IN_IGNORE_TIMEOUT = 50;
     dsp::ClockDivider taskTimer;
@@ -120,6 +121,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     putils::PosEdgeDetect stopInEdge;
     putils::PosEdgeDetect clockInEdge;
     putils::PosEdgeDetect resetInEdge;
+    putils::Pulser autostartTimeout;
     putils::Pulser runInIgnoreTimeout;
     putils::Pulser runInLedPulse;
     putils::Pulser stopInLedPulse;
@@ -181,6 +183,14 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 
         // run tasks
         if(taskTimer.process()) {
+            // delayed autostart
+            if(autostartTimeout.timeout) {
+                if(!autostartTimeout.update()) {
+                    midiClock.resetRequest();
+                    midiClock.continueRequest();
+                }
+            }
+
             // handle buttons
             if(resetSwEdge.update((int)params[RESET_SW].getValue())) {
                 midiClock.resetRequest();
@@ -280,15 +290,14 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     void onReset(void) override {
         midiClock.setSource((int)params[CLOCK_SOURCE].getValue());
         midiClock.setTempo(params[TEMPO].getValue());
-        outputDiv = (int)params[OUTPUT_DIV].getValue();
+        outputDiv = 1;
         outputDivCount = 0;
     }
 
     // module added (post initialize)
     void onAdd(void) override {
         if((int)params[AUTOSTART_EN].getValue()) {
-            midiClock.resetRequest();
-            midiClock.continueRequest();
+            autostartTimeout.timeout = AUTOSTART_TIMEOUT;
         }
         onReset();
     }
