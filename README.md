@@ -44,6 +44,18 @@ For more information see the full spec: [vMIDI Implementation](vMIDI.md)
 
 <img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_CC_Note.png" />
 
+The MIDI CC Note module allows conversion of MIDI CC messages to note messages. A common use case is a MIDI controller with
+buttons that you wish to use to generate note events. The velocity of the notes generated can be set by the VELOCITY pot.
+
+It is assumed that the CC buttons are arranged in order from low to high. You can remap CC messages into other orders using the
+MIDI Mapper module. Set the CC base using the right click menu. This will shift all events to start at note 60. The CC message must
+be >= 64 for press, and <64 for release. Use the **OCT UP**, **OCT NORM** and **OCT DOWN** buttons to shift the octave.
+
+**Features:**
+
+- CC input
+- Note output
+- Input and output jacks uses the **vMIDI&trade;** patchable MIDI protocol
 
 <br clear="right"/>
 
@@ -91,10 +103,45 @@ To transpose the outputs up or down simply hover and scroll over the TRANS displ
 <br clear="right"/>
 
 ----
-### MIDI CV
+### MIDI Clock
 **MIDI Clock**
 
 <img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/MIDI_Clock.png" />
+
+The MIDI Clock module implements a MIDI clock that can generate stable clocks internally or can sync to either analog or MIDI
+clocks. The analog clock output can be divided down to quarter notes. The clock internally runs at the standard MIDI rate of
+24 pulses per quarter. (PPQ)
+
+When inputting an analog clock it must be at the 24PPQ rate. Use an LFO or VCO to generate clocks that vary if that's what you
+want, otherwise us this module as the master clock.
+
+An auto-start function can be used so that the clock will start automatically when VCV Rack is launched. This can be useful
+for development or testing.
+
+When using external MIDI clock the analog clock inputs take precedence over the MIDI clock input. Using two kinds of clocks
+at the same time or very slow clocks might result in undesired behaviour.
+
+As per the MIDI spec, the MIDI OUT jack sends MIDI timing ticks all the time even when the clock is stopped. This is the
+correct way as it lets other devices stay synchronized to the clock so they all start together smoothly.
+
+**Editing:**
+
+- To adjust the tempo middle scroll over the tempo display. To adjust in 0.1 BPM hold shift while scrolling.
+- To tap the tempo click on the tempo display.
+- To adjust the INT/EXT or AUTOSTART functions click on them
+- To adjust the CLOCK OUT divider middle scroll over the display
+
+**Features:**
+
+- Controls for manual RESET and RUN/STOP control
+- **RUN IN** jack supports three different behaviours which can be selected by the right click menu.
+- **STOP IN** jack always stops the sequencer and can be used along with the RUN IN modes
+- **CLOCK IN** accepts 24PPQ clock pulses
+- **RESET IN** resets the count and produces a pulse on the **RESET OUT** jack
+- **CLOCK OUT** produces an analog clock pulse output that can be divded from 1/1 (24PPQ) down to 1/24 (1PPQ)
+- **RESET OUT** produces a pulse when a MIDI start message is received or the clock is reset
+- **MIDI IN** and **MIDI OUT** jacks uses the **vMIDI&trade;** patchable MIDI protocol
+
 
 <br clear="right"/>
 
@@ -265,6 +312,16 @@ There are three modes you can use with the MIDI Repeater:
 **Multi-channel and X/Y Meter**
 
 <img align="right" src="https://github.com/kilpatrickaudio/Kilpatrick-Toolbox/raw/master/res/images/Multi_Meter.png" />
+
+The Multi Meter is useful for viewing a lot of audio signal levels at the same time. It also supports X/Y mode for
+viewing phase differences between stereo channels. All meters are peak reading with peak hold.
+
+**Features:**
+
+- **IN L** and **IN R** jacks input the first two channels.
+- **MULTI IN** jack accepts up to 16 channels for X/Y or multi-input mode
+- **X/Y MODE** displays levels and X/Y plot of the first two input channels
+- **MULTI MODE** displays 4, 8 or 16 channel levels
 
 <br clear="right"/>
 
