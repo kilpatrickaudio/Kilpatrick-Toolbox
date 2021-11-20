@@ -1,7 +1,7 @@
 {
   "slug": "Kilpatrick-Toolbox",
   "name": "Kilpatrick-Toolbox",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "license": "GPL-3.0-or-later",
   "brand": "Kilpatrick Audio",
   "author": "Andrew Kilpatrick",
@@ -127,8 +127,7 @@
       "description": "Stereo Audio Levelmeter",
       "manualUrl": "https://github.com/kilpatrickaudio/Kilpatrick-Toolbox#stereo_meter",
       "tags": [
-        "Utility",
-        "Metering"
+        "Utility"
       ]
     },
     {
@@ -137,7 +136,8 @@
       "description": "Test Oscillator with Sweep",
       "manualUrl": "https://github.com/kilpatrickaudio/Kilpatrick-Toolbox#test_osc",
       "tags": [
-        "Utility"
+        "Utility",
+        "Oscillator"
       ]
     },
     {
@@ -145,8 +145,7 @@
       "name": "Multi Meter",
       "description": "Multi-channel and X/Y Meter",
       "tags": [
-        "Utility",
-        "Metering"
+        "Utility"
       ]
     },
     {
