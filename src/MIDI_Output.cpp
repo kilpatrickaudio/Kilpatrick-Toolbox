@@ -137,7 +137,7 @@ struct MIDI_OutputWidget : ModuleWidget {
             vutils::panelin2px(0.4, 4.25 - labelSpacing),
             vutils::in2px(labelW, labelH));
         l->handler = (KilpatrickLabelHandler *)module;
-        l->text = "Output";
+        l->text = "No Device";
         l->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         l->fontSize = 10;
         l->fgColor = MIDI_LABEL_FG_COLOR;

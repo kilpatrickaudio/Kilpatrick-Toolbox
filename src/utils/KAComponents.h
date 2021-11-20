@@ -740,7 +740,7 @@ struct KALevelmeter {
     // running state
     float level;  // dB level -96.0f to 0.0f
     float peak;  // dB level -96.0f to 0.0f
-    int textSlowCount = 0;
+    int textSlowCount = 9999;
     int textSlowdown = 0;  // slowdown level (0 = disable)
     int textDrawDecimal = 1;  // default on
     char peakStr[64];

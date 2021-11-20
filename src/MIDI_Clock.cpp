@@ -534,7 +534,7 @@ struct MidiClockDisplay : widget::TransparentWidget {
     // create a display
     MidiClockDisplay(math::Vec pos, math::Vec size) {
         this->source = NULL;
-        rad = mm2px(2.0);
+        rad = mm2px(1.0);
         box.pos = pos.minus(size.div(2));
         box.size = size;
         textColor = nvgRGB(0xff, 0xff, 0xff);
@@ -562,8 +562,23 @@ struct MidiClockDisplay : widget::TransparentWidget {
 
     // draw
     void draw(const DrawArgs& args) override {
+        float tempo;
+        int internal, synced, div, autostart, running;
         if(source == NULL) {
-            return;
+            tempo = 120.0f;
+            internal = 1;
+            synced = 0;
+            div = 1;
+            autostart = 0;
+            running = 0;
+        }
+        else {
+            tempo = source->midiClockDisplayGetTempo();
+            internal = source->midiClockDisplayIsSourceInternal();
+            synced = source->midiClockDisplayIsSourceSynced();
+            div = source->midiClockDisplayGetOutputDiv();
+            autostart = source->midiClockDisplayIsAutostartEnabled();
+            running = source->midiClockDisplayIsRunning();
         }
 
         std::shared_ptr<Font> font = APP->window->loadFont(fontFilename);
@@ -582,16 +597,16 @@ struct MidiClockDisplay : widget::TransparentWidget {
         // tempo display
         nvgFontSize(args.vg, fontSizeLarge);
         nvgText(args.vg, box.size.x * 0.5f, box.size.y * 0.5f,
-            putils::format("%3.1f", source->midiClockDisplayGetTempo()).c_str(), NULL);
+            putils::format("%3.1f", tempo).c_str(), NULL);
 
         nvgFontSize(args.vg, fontSizeSmall);
 
         // int/ext state
-        if(source->midiClockDisplayIsSourceInternal()) {
+        if(internal) {
             nvgText(args.vg, box.size.x * 0.75f, box.size.y * 0.15f, "INT", NULL);
         }
         else {
-            if(source->midiClockDisplayIsSourceSynced()) {
+            if(synced) {
                 nvgFillColor(args.vg, extSyncColor);
             }
             else {
@@ -603,10 +618,10 @@ struct MidiClockDisplay : widget::TransparentWidget {
         // output divider
         nvgFillColor(args.vg, textColor);
         nvgText(args.vg, box.size.x * 0.25f, box.size.y * 0.85f,
-            putils::format("d:1/%d", source->midiClockDisplayGetOutputDiv()).c_str(), NULL);
+            putils::format("d:1/%d", div).c_str(), NULL);
 
         // autostart enable
-        if(source->midiClockDisplayIsAutostartEnabled()) {
+        if(autostart) {
             nvgText(args.vg, box.size.x * 0.75f, box.size.y * 0.85f, "AUTO", NULL);
         }
         else {
@@ -614,7 +629,7 @@ struct MidiClockDisplay : widget::TransparentWidget {
         }
 
         // run/stop state
-        if(source->midiClockDisplayIsRunning()) {
+        if(running) {
             nvgFillColor(args.vg, runColor);
             nvgText(args.vg, box.size.x * 0.25f, box.size.y * 0.15f, "RUN", NULL);
         }

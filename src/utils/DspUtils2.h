@@ -862,6 +862,7 @@ struct AudioBufferer {
     }
 
     // check if the inbuf is full and reset if it is
+    // this must be called even if the return value is not needed
     // returns 1 if full, 0 otherwise
     int isFull(void) {
         if(bufCount >= bufSizeSamps) {

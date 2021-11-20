@@ -136,7 +136,7 @@ struct Stereo_MeterDisplay : widget::TransparentWidget {
     Stereo_MeterDisplay(int id, math::Vec pos, math::Vec size) {
         this->id = id;
         this->source = NULL;
-        rad = mm2px(1.625);
+        rad = mm2px(1);
         box.pos = pos.minus(size.div(2));
         box.size = size;
         bgColor = nvgRGBA(0x00, 0x00, 0x00, 0xff);
@@ -164,9 +164,20 @@ struct Stereo_MeterDisplay : widget::TransparentWidget {
 
     // draw
     void draw(const DrawArgs& args) override {
-        float level, peak;
+        float levelL, peakL, levelR, peakR, refL, refR;
         if(source == NULL) {
-            return;
+            levelL = -10.0f;
+            levelR = -10.0f;
+            peakL = -10.0f;
+            peakR = -10.0f;
+            refL = 0.0f;
+            refR = 0.0f;
+        }
+        else {
+            source->getPeakDbLevels(0, &levelL, &peakL);
+            source->getPeakDbLevels(1, &levelR, &peakR);
+            refL = source->getRefLevel(0);
+            refR = source->getRefLevel(1);
         }
 
         // background
@@ -175,13 +186,11 @@ struct Stereo_MeterDisplay : widget::TransparentWidget {
         nvgFillColor(args.vg, bgColor);
         nvgFill(args.vg);
 
-        source->getPeakDbLevels(0, &level, &peak);
-        meterL.setLevels(level, peak);
-        meterL.setRefLevel(source->getRefLevel(0));
+        meterL.setLevels(levelL, peakL);
+        meterL.setRefLevel(refL);
 
-        source->getPeakDbLevels(1, &level, &peak);
-        meterR.setLevels(level, peak);
-        meterR.setRefLevel(source->getRefLevel(1));
+        meterR.setLevels(levelR, peakR);
+        meterR.setRefLevel(refR);
 
         meterL.draw(args);
         meterR.draw(args);
@@ -216,7 +225,7 @@ struct Stereo_MeterWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-        Stereo_MeterDisplay *disp = new Stereo_MeterDisplay(0, mm2px(Vec(15.24, 47.5)), mm2px(Vec(26.0, 68.0)));
+        Stereo_MeterDisplay *disp = new Stereo_MeterDisplay(0, mm2px(Vec(15.24, 48.5)), mm2px(Vec(26.0, 68.0)));
         disp->source = module;
         addChild(disp);
 

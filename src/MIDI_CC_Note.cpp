@@ -195,9 +195,10 @@ struct MIDI_CC_NoteWidget : ModuleWidget {
 
         KilpatrickLabel *textField = new KilpatrickLabel(0, mm2px(Vec(10.16, 20.5)), mm2px(Vec(16.0, 8.0)));
         textField->id = 0;
-        textField->rad = 4.0;
+        textField->rad = 1.0;
         textField->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         textField->fontSize = 14.0;
+        textField->text = "T:0";
         textField->hAlign = NVG_ALIGN_LEFT;
         textField->vAlign = NVG_ALIGN_MIDDLE;
         textField->bgColor = nvgRGBA(0x00, 0x00, 0x00, 0x00);

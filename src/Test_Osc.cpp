@@ -437,7 +437,7 @@ struct TestOscDisplay : widget::TransparentWidget {
     TestOscDisplay(int id, math::Vec pos, math::Vec size) {
         this->id = id;
         this->source = NULL;
-        rad = mm2px(2.0);
+        rad = mm2px(1.0);
         box.pos = pos.minus(size.div(2));
         box.size = size;
         textColor = nvgRGB(0xe0, 0xe0, 0xe0);
@@ -449,8 +449,20 @@ struct TestOscDisplay : widget::TransparentWidget {
 
     // draw
     void draw(const DrawArgs& args) override {
+        float abs, ref, sweepTime, sweepProgress, freq;
         if(source == NULL) {
-            return;
+            abs = 1.0f;
+            ref = 1.0f;
+            sweepTime = 1.0;
+            sweepProgress = 0.0f;
+            freq = 1047.0f;
+        }
+        else {
+            abs = source->dispGetAbsLevel();
+            ref = source->dispGetRefLevel();
+            sweepTime = source->dispGetSweepTime();
+            sweepProgress = source->dispGetSweepProgress();
+            freq = source->dispGetFrequency();
         }
 
         std::shared_ptr<Font> font = APP->window->loadFont(fontFilename);
@@ -470,23 +482,23 @@ struct TestOscDisplay : widget::TransparentWidget {
 
         // abs level
         nvgText(args.vg, box.size.x * 0.5f, box.size.y * 0.15f,
-            ("ABS: " + putils::factorToDbStr1(source->dispGetAbsLevel())).c_str(), NULL);
+            ("ABS: " + putils::factorToDbStr1(abs)).c_str(), NULL);
 
         // ref level
         nvgText(args.vg, box.size.x * 0.5f, box.size.y * 0.3f,
-            ("REF: " + putils::factorToDbStr1(source->dispGetRefLevel())).c_str(), NULL);
+            ("REF: " + putils::factorToDbStr1(ref)).c_str(), NULL);
 
         // sweep time
         // sweep progress
         nvgText(args.vg, box.size.x * 0.5f, box.size.y * 0.85f,
-            ("S: " + putils::floatToStr1(source->dispGetSweepTime()) + "s " +
-            putils::factorToPercentStr(source->dispGetSweepProgress())).c_str(), NULL);
+            ("S: " + putils::floatToStr1(sweepTime) + "s " +
+            putils::factorToPercentStr(sweepProgress)).c_str(), NULL);
 
         // frequency
 //        nvgTextAlign(args.vg, NVG_ALIGN_CENTER | NVG_ALIGN_MIDDLE);
         nvgFontSize(args.vg, fontSizeLarge);
         nvgText(args.vg, box.size.x * 0.5f, box.size.y * 0.5f,
-            putils::freqToStr(source->dispGetFrequency()).c_str(), NULL);
+            putils::freqToStr(freq).c_str(), NULL);
     }
 
     void onHoverScroll(const event::HoverScroll& e) override {

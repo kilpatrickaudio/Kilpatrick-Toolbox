@@ -233,9 +233,10 @@ struct MIDI_MapperWidget : ModuleWidget {
 
         KilpatrickLabel *textField = new KilpatrickLabel(0, mm2px(Vec(10.16, 20.5)), mm2px(Vec(16.0, 8.0)));
         textField->id = 0;
-        textField->rad = 4.0;
+        textField->rad = 1.0;
         textField->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         textField->fontSize = 12.0;
+        textField->text = "--- ---";
         textField->hAlign = NVG_ALIGN_LEFT;
         textField->vAlign = NVG_ALIGN_MIDDLE;
         textField->bgColor = nvgRGBA(0x00, 0x00, 0x00, 0x00);
@@ -245,9 +246,10 @@ struct MIDI_MapperWidget : ModuleWidget {
 
         textField = new KilpatrickLabel(0, mm2px(Vec(10.16, 32.5)), mm2px(Vec(16.0, 8.0)));
         textField->id = 1;
-        textField->rad = 4.0;
+        textField->rad = 1.0;
         textField->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         textField->fontSize = 12.0;
+        textField->text = "--- ---";
         textField->hAlign = NVG_ALIGN_LEFT;
         textField->vAlign = NVG_ALIGN_MIDDLE;
         textField->bgColor = nvgRGBA(0x00, 0x00, 0x00, 0x00);
@@ -257,9 +259,10 @@ struct MIDI_MapperWidget : ModuleWidget {
 
         textField = new KilpatrickLabel(0, mm2px(Vec(10.16, 44.5)), mm2px(Vec(16.0, 8.0)));
         textField->id = 2;
-        textField->rad = 4.0;
+        textField->rad = 1.0;
         textField->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         textField->fontSize = 12.0;
+        textField->text = "--- ---";
         textField->hAlign = NVG_ALIGN_LEFT;
         textField->vAlign = NVG_ALIGN_MIDDLE;
         textField->bgColor = nvgRGBA(0x00, 0x00, 0x00, 0x00);
@@ -269,9 +272,10 @@ struct MIDI_MapperWidget : ModuleWidget {
 
         textField = new KilpatrickLabel(0, mm2px(Vec(10.16, 56.5)), mm2px(Vec(16.0, 8.0)));
         textField->id = 3;
-        textField->rad = 4.0;
+        textField->rad = 1.0;
         textField->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         textField->fontSize = 12.0;
+        textField->text = "--- ---";
         textField->hAlign = NVG_ALIGN_LEFT;
         textField->vAlign = NVG_ALIGN_MIDDLE;
         textField->bgColor = nvgRGBA(0x00, 0x00, 0x00, 0x00);
@@ -281,9 +285,10 @@ struct MIDI_MapperWidget : ModuleWidget {
 
         textField = new KilpatrickLabel(0, mm2px(Vec(10.16, 68.5)), mm2px(Vec(16.0, 8.0)));
         textField->id = 4;
-        textField->rad = 4.0;
+        textField->rad = 1.0;
         textField->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         textField->fontSize = 12.0;
+        textField->text = "--- ---";
         textField->hAlign = NVG_ALIGN_LEFT;
         textField->vAlign = NVG_ALIGN_MIDDLE;
         textField->bgColor = nvgRGBA(0x00, 0x00, 0x00, 0x00);
@@ -293,9 +298,10 @@ struct MIDI_MapperWidget : ModuleWidget {
 
         textField = new KilpatrickLabel(0, mm2px(Vec(10.16, 80.5)), mm2px(Vec(16.0, 8.0)));
         textField->id = 5;
-        textField->rad = 4.0;
+        textField->rad = 1.0;
         textField->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         textField->fontSize = 12.0;
+        textField->text = "--- ---";
         textField->hAlign = NVG_ALIGN_LEFT;
         textField->vAlign = NVG_ALIGN_MIDDLE;
         textField->bgColor = nvgRGBA(0x00, 0x00, 0x00, 0x00);

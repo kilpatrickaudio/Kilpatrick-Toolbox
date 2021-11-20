@@ -205,9 +205,16 @@ struct MIDI_MonitorWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
         KilpatrickLabel *textField = new KilpatrickLabel(0, mm2px(Vec(20.32, 30.446)), mm2px(Vec(32.0, 32.0)));
-        textField->rad = 4.0;
+        textField->rad = 1.0;
         textField->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
         textField->fontSize = 12.0;
+        textField->text = "0001 1 B0  1 16\n" \
+            "0002 1 B0  2 16\n" \
+            "0003 1 B0  3 16\n" \
+            "0004 1 B0  4 16\n" \
+            "0005 1 B0  1 16\n" \
+            "0006 1 B0  2 16\n" \
+            "0007 1 B0  3 16\n";
         textField->hAlign = NVG_ALIGN_LEFT;
         textField->vAlign = NVG_ALIGN_MIDDLE;
         textField->bgColor = nvgRGBA(0x00, 0x00, 0x00, 0x00);

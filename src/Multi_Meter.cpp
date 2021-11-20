@@ -110,8 +110,8 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
     // constructor
 	Multi_Meter() {
 		config(PARAMS_LEN, INPUTS_LEN, OUTPUTS_LEN, LIGHTS_LEN);
-		configParam(MODE_SW, 0.f, 1.f, 1.f, "MODE");
-		configParam(CHAN_SW, 0.f, 2.f, 2.f, "CHANNELS");
+		configParam(MODE_SW, 0.f, 1.f, 0.f, "MODE");
+		configParam(CHAN_SW, 0.f, 2.f, 0.f, "CHANNELS");
         for(int i = 0; i < MAX_CHANNELS; i ++) {
             configParam(REF_LEVEL_1 + i, -60.0f, 24.0f, 0.0f, putils::format("REF LEVEL %d", (i + 1)));
         }
@@ -238,7 +238,7 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
     Multi_MeterDisplay(int id, math::Vec pos, math::Vec size) {
         this->id = id;
         this->source = NULL;
-        rad = mm2px(1.625);
+        rad = mm2px(1);
         box.pos = pos.minus(size.div(2));
         box.size = size;
         bgColor = nvgRGBA(0x00, 0x00, 0x00, 0xff);
@@ -260,11 +260,30 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
 
     // draw
     void draw(const DrawArgs& args) override {
-        float level, peak;
-        int displayMeters;
+        float level[16], peak[16], ref[16];
+        int reflowMeters = 0;
         if(source == NULL) {
-            return;
+            meterMode = Multi_Meter::METER_16CH;
+            reflowMeters = 1;
+            for(int i = 0; i < getNumMeters(); i ++) {
+                level[i] = -10.0f;
+                peak[i] = -10.0f;
+                ref[i] = 0.0f;
+            }
         }
+        else {
+            if(meterMode != source->getMeterMode()) {
+                meterMode = source->getMeterMode();
+                reflowMeters = 1;
+            }
+
+            // render meters
+            for(int i = 0; i < getNumMeters(); i ++) {
+                source->getPeakDbLevels(i, &level[i], &peak[i]);
+                ref[i] = source->getRefLevel(i);
+            }
+        }
+
         // background
         nvgBeginPath(args.vg);
         nvgRoundedRect(args.vg, 0, 0, box.size.x, box.size.y, rad);
@@ -272,9 +291,7 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
         nvgFill(args.vg);
 
         // re-layout the meters
-        if(meterMode != source->getMeterMode()) {
-            meterMode = source->getMeterMode();
-
+        if(reflowMeters) {
             float xPos = box.size.x * 0.025f;
             float w = box.size.x * 0.05;
             float space = box.size.x * 0.01;
@@ -300,13 +317,13 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
                 meters[i].setMinLevel(-96.0f);  // this is needed after we set the height
                 xPos += w + space;
             }
+            reflowMeters = 0;
         }
 
         // render meters
         for(int i = 0; i < getNumMeters(); i ++) {
-            source->getPeakDbLevels(i, &level, &peak);
-            meters[i].setLevels(level, peak);
-            meters[i].setRefLevel(source->getRefLevel(i));
+            meters[i].setLevels(level[i], peak[i]);
+            meters[i].setRefLevel(ref[i]);
             meters[i].draw(args);
         }
 
@@ -349,7 +366,7 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
             nvgStrokeWidth(args.vg, 1.5f);
             nvgStroke(args.vg);
         }
-        else {
+        else if(source != NULL) {
             source->clearXyPoints();
         }
     }
@@ -400,7 +417,7 @@ struct Multi_MeterWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-        Multi_MeterDisplay *disp = new Multi_MeterDisplay(0, mm2px(Vec(55.88, 54.5)), mm2px(Vec(92.0, 84.0)));
+        Multi_MeterDisplay *disp = new Multi_MeterDisplay(0, mm2px(Vec(55.88, 55.5)), mm2px(Vec(92.0, 84.0)));
         disp->source = module;
         addChild(disp);
 

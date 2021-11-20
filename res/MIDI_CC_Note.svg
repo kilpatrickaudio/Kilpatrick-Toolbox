@@ -58,8 +58,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="1.979899"
-     inkscape:cx="-192.48431"
-     inkscape:cy="298.11153"
+     inkscape:cx="-13.434773"
+     inkscape:cy="318.31458"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -480,7 +480,8 @@
        height="9.778945"
        x="2.2705271"
        y="184.11053"
-       rx="0.55430222" />
+       rx="1"
+       ry="1" />
   </g>
   <g
      inkscape:groupmode="layer"

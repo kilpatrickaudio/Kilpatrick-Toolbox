@@ -58,8 +58,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="3.959798"
-     inkscape:cx="34.446485"
-     inkscape:cy="171.83804"
+     inkscape:cx="-8.8638051"
+     inkscape:cy="423.8711"
      inkscape:document-units="mm"
      inkscape:current-layer="layer2"
      showgrid="false"
@@ -194,7 +194,8 @@
        height="15.858515"
        x="4.3907433"
        y="14.517176"
-       rx="1.1191651" />
+       rx="1"
+       ry="1" />
     <g
        transform="matrix(0.35277777,0,0,-0.35277777,-19,147.6)"
        inkscape:label="aw_sideall"

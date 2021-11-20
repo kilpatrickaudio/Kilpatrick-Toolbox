@@ -15,7 +15,7 @@
    viewBox="0 0 40.639999 128.5"
    version="1.1"
    id="svg951"
-   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)"
    sodipodi:docname="MIDI_Monitor.svg">
   <defs
      id="defs945">
@@ -57,14 +57,14 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="-37.233273"
-     inkscape:cy="137.44002"
+     inkscape:zoom="2.8"
+     inkscape:cx="-45.008419"
+     inkscape:cy="321.46493"
      inkscape:document-units="mm"
      inkscape:current-layer="layer2"
      showgrid="false"
      inkscape:window-width="1920"
-     inkscape:window-height="1025"
+     inkscape:window-height="1033"
      inkscape:window-x="0"
      inkscape:window-y="0"
      inkscape:window-maximized="1"
@@ -180,7 +180,8 @@
        height="31.799833"
        x="4.420084"
        y="14.546516"
-       rx="1.1171036" />
+       rx="1.117"
+       ry="1" />
     <g
        aria-label="MIDI INS"
        style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:2.82222223px;line-height:100%;font-family:DIN;-inkscape-font-specification:DIN;text-align:center;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:middle;fill:#f4da98;fill-opacity:1;stroke:none;stroke-width:0.26458332px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
