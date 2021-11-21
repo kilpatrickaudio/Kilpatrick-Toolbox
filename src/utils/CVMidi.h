@@ -40,7 +40,7 @@ public:
 
     // send an output message to a port
     // returns -1 on error
-    int sendOutputMessage(midi::Message msg) {
+    int sendOutputMessage(const midi::Message& msg) {
         msgQueue.onMessage(msg);
         return 0;
     }
@@ -67,9 +67,10 @@ public:
         //
         // input messages and send them to MIDI lib
         if(isInput) {
-            // port is connected and value is not negative
+            // port is connected and value is negative
             if(port->getVoltage() < 0.0f) {
-                msgWord = roundf(-port->getVoltage());
+                msgWord = roundf(-port->getVoltage());  // convert voltage to int
+                msg.setSize(3);
                 msg.bytes[0] = (msgWord >> 16) & 0xff;
                 msg.bytes[1] = (msgWord >> 8) & 0xff;
                 msg.bytes[2] = msgWord & 0xff;

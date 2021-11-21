@@ -314,7 +314,7 @@ struct MIDI_CV : Module {
     }
 
     // learn the current input message
-    void learn(midi::Message msg) {
+    void learn(const midi::Message& msg) {
         if(learnMode == LEARN_DISABLE) {
             return;
         }

@@ -43,7 +43,7 @@ public:
     // returns:
     //  - 1 = CC already known with this value
     //  - 0 = CC not known or different value / message type
-    int handleCC(midi::Message msg);
+    int handleCC(const midi::Message& msg);
 
     // reset all history
     void reset();

@@ -41,7 +41,7 @@ public:
 
     // send message to the MIDI clock (from a port)
     // this may cause callbacks to be called
-    void sendMessage(midi::Message msg);
+    void sendMessage(const midi::Message& msg);
 };
 
 #endif

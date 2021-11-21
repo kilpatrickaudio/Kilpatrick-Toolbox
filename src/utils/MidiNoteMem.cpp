@@ -14,7 +14,7 @@ MidiNoteMem::MidiNoteMem() {
 }
 
 // add a note
-void MidiNoteMem::addNote(midi::Message msg) {
+void MidiNoteMem::addNote(const midi::Message& msg) {
     int noteOff = 0;
     std::vector<midi::Message>::iterator iter;
 

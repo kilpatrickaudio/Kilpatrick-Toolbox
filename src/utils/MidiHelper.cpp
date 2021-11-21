@@ -9,7 +9,6 @@
  */
 #include "MidiHelper.h"
 #include <string>
-#include <rtmidi/RtMidi.h>
 #include "MidiProtocol.h"
 #define MIDI_HELPER_HANDLE_RTMIDI  // uncomment to handle RtMidi exceptions
 
@@ -74,21 +73,11 @@ void MidiHelper::process(void) {
 //                    DEBUG("clearing devices so they will be reattached");
                     if((int)inputs.size() > slot && inputs[slot].deviceId != -1) {
 //                        DEBUG("clearing input slot: %d", slot);
-                        try {
-                            inputs[slot].setDeviceId(-1);
-                        }
-                        catch(RtMidiError &error) {
-                            return;
-                        }
+                        inputs[slot].setDeviceId(-1);
                     }
                     if((int)outputs.size() > slot && outputs[slot].deviceId != -1) {
 //                        DEBUG("clearing output slot: %d", slot);
-                        try {
-                            outputs[slot].setDeviceId(-1);
-                        }
-                        catch(RtMidiError &error) {
-                            return;
-                        }
+                        outputs[slot].setDeviceId(-1);
                     }
                 }
             }
@@ -321,6 +310,29 @@ int MidiHelper::isDetected(int slot) {
 // get an input message from a port
 // returns -1 on error, 0 for no message, 1 if message received
 int MidiHelper::getInputMessage(int slot, midi::Message *msg) {
+/*
+    // XXX new version
+    int i;
+    midi::Message inMsg;
+    if(slot < 0 || slot >= (int)inputs.size()) {
+        return -1;
+    }
+    if(inputs[slot].tryPop(&inMsg, INT64_MAX)) {
+        // inspect the message for active sensing and steal it
+        if(inMsg.bytes[0] == MIDI_ACTIVE_SENSING) {
+            onlineTimeouts[slot] = ONLINE_TIMEOUT;
+            return 0;
+        }
+        // return 1 saying the caller has a message they can use
+        msg->setSize(inMsg.getSize());
+        for(i = 0; i < inMsg.getSize(); i ++) {
+            msg->bytes[i] = inMsg.bytes[i];
+        }
+        return 1;
+    }
+    return 0;
+*/
+    // original version
     if(slot < 0 || slot >= (int)inputs.size()) {
         return -1;
     }
@@ -338,19 +350,14 @@ int MidiHelper::getInputMessage(int slot, midi::Message *msg) {
 
 // send an output message to a port
 // returns -1 on error
-int MidiHelper::sendOutputMessage(int slot, midi::Message msg) {
+int MidiHelper::sendOutputMessage(int slot, const midi::Message& msg) {
     if(slot < 0 || slot >= (int)outputs.size()) {
         return -1;
     }
     if(outputs[slot].deviceId == -1) {
         return -1;
     }
-    try {
-        outputs[slot].sendMessage(msg);
-    }
-    catch(RtMidiError &error) {
-        return -1;
-    }
+    outputs[slot].sendMessage(msg);
     return 0;
 }
 
@@ -359,22 +366,12 @@ int MidiHelper::resetPorts(void) {
     int slot;
     for(slot = 0; slot < (int)inputs.size(); slot ++) {
         if(inputs[slot].deviceId != -1) {
-            try {
-                inputs[slot].reset();
-            }
-            catch(RtMidiError &error) {
-                return -1;
-            }
+            inputs[slot].reset();
         }
     }
     for(slot = 0; slot < (int)outputs.size(); slot ++) {
         if(outputs[slot].deviceId != -1) {
-            try {
-                outputs[slot].reset();
-            }
-            catch(RtMidiError &error) {
-                return -1;
-            }
+            outputs[slot].reset();
         }
     }
     return 0;
@@ -385,67 +382,52 @@ int MidiHelper::resetPorts(void) {
 //
 // send a note on - returns -1 on error
 int MidiHelper::sendNoteOn(int slot, int chan, int note, int vel) {
+    midi::Message msg;
     if(slot < 0 || slot >= (int)outputs.size()) {
         return -1;
     }
     if(outputs[slot].deviceId == -1) {
         return -1;
     }
-    midi::Message msg;
 	msg.setStatus(MIDI_NOTE_ON >> 4);
     msg.setChannel(chan);
 	msg.setNote(note);
 	msg.setValue(vel);
-    try {
-        outputs[slot].sendMessage(msg);
-    }
-    catch(RtMidiError &error) {
-        return -1;
-    }
+    outputs[slot].sendMessage(msg);
     return 0;
 }
 
 // send a note off - returns -1 on error
 int MidiHelper::sendNoteOff(int slot, int chan, int note) {
+    midi::Message msg;
     if(slot < 0 || slot >= (int)outputs.size()) {
         return -1;
     }
     if(outputs[slot].deviceId == -1) {
         return -1;
     }
-    midi::Message msg;
 	msg.setStatus(MIDI_NOTE_OFF >> 4);
     msg.setChannel(chan);
 	msg.setNote(note);
 	msg.setValue(0);
-    try {
-        outputs[slot].sendMessage(msg);
-    }
-    catch(RtMidiError &error) {
-        return -1;
-    }
+    outputs[slot].sendMessage(msg);
     return 0;
 }
 
 // send a CC - returns -1 on error
 int MidiHelper::sendCC(int slot, int chan, int cc, int val) {
+    midi::Message msg;
     if(slot < 0 || slot >= (int)outputs.size()) {
         return -1;
     }
     if(outputs[slot].deviceId == -1) {
         return -1;
     }
-	midi::Message msg;
 	msg.setStatus(MIDI_CONTROL_CHANGE >> 4);
     msg.setChannel(chan);
 	msg.setNote(cc);
 	msg.setValue(val);
-    try {
-        outputs[slot].sendMessage(msg);
-    }
-    catch(RtMidiError &error) {
-        return -1;
-    }
+    outputs[slot].sendMessage(msg);
     return 0;
 }
 
@@ -465,21 +447,11 @@ void MidiHelper::driverSetSelected(int driverId) {
     int slot;
     // inputs
     for(slot = 0; slot < (int)inputs.size(); slot ++) {
-        try {
-            inputs[slot].setDriverId(driverId);
-        }
-        catch(RtMidiError &error) {
-            return;
-        }
+        inputs[slot].setDriverId(driverId);
     }
     // outputs
     for(slot = 0; slot < (int)outputs.size(); slot ++) {
-        try {
-            outputs[slot].setDriverId(driverId);
-        }
-        catch(RtMidiError &error) {
-            return;
-        }
+        outputs[slot].setDriverId(driverId);
     }
 }
 
@@ -507,35 +479,20 @@ int MidiHelper::deviceIsOpen(int isInput, int slot, int deviceId) {
 // handle the device being chosen
 void MidiHelper::deviceSetSelected(int slot, int isInput, int deviceId) {
     if(combinedMode) {
-        try {
-            openInput(slot, deviceId);  // uses device ID from menu
-            if(deviceId == -1) {
-                openOutput(slot, -1);
-            }
-            else {
-                std::string devName = getInputDeviceName(slot, deviceId);
-                openOutputByName(slot, devName);  // uses name from inout device
-            }
+        openInput(slot, deviceId);  // uses device ID from menu
+        if(deviceId == -1) {
+            openOutput(slot, -1);
         }
-        catch(RtMidiError &error) {
-            return;
+        else {
+            std::string devName = getInputDeviceName(slot, deviceId);
+            openOutputByName(slot, devName);  // uses name from inout device
         }
     }
     else if(isInput) {
-        try {
-            openInput(slot, deviceId);
-        }
-        catch(RtMidiError &error) {
-            return;
-        }
+        openInput(slot, deviceId);
     }
     else {
-        try {
-            openOutput(slot, deviceId);
-        }
-        catch(RtMidiError &error) {
-            return;
-        }
+        openOutput(slot, deviceId);
     }
 }
 
@@ -543,13 +500,13 @@ void MidiHelper::deviceSetSelected(int slot, int isInput, int deviceId) {
 // helpers
 //
 // print a message
-void MidiHelper::printMessage(midi::Message msg) {
+void MidiHelper::printMessage(const midi::Message& msg) {
     DEBUG("MIDI RX - len: %d - st: 0x%02x - d0: 0x%02x - d1: 0x%02x",
         msg.getSize(), msg.bytes[0], msg.bytes[1], msg.bytes[2]);
 }
 
 // check if the message is a note message
-int MidiHelper::isNoteMessage(midi::Message msg) {
+int MidiHelper::isNoteMessage(const midi::Message& msg) {
     if((msg.bytes[0] & 0xf0) == MIDI_NOTE_OFF ||
             (msg.bytes[0] & 0xf0) == MIDI_NOTE_ON) {
         return 1;
@@ -558,7 +515,7 @@ int MidiHelper::isNoteMessage(midi::Message msg) {
 }
 
 // check if the message is a CC message
-int MidiHelper::isControlChangeMessage(midi::Message msg) {
+int MidiHelper::isControlChangeMessage(const midi::Message& msg) {
     if((msg.bytes[0] & 0xf0) == MIDI_CONTROL_CHANGE) {
         return 1;
     }
@@ -566,7 +523,7 @@ int MidiHelper::isControlChangeMessage(midi::Message msg) {
 }
 
 // check if the message is a channel message
-int MidiHelper::isChannelMessage(midi::Message msg) {
+int MidiHelper::isChannelMessage(const midi::Message& msg) {
     if((msg.bytes[0] & 0xf0) < 0xf0) {
         return 1;
     }
@@ -574,7 +531,7 @@ int MidiHelper::isChannelMessage(midi::Message msg) {
 }
 
 // check if the message is a system common message (not including sysex)
-int MidiHelper::isSystemCommonMessage(midi::Message msg) {
+int MidiHelper::isSystemCommonMessage(const midi::Message& msg) {
     if(msg.bytes[0] >= 0xf1 && msg.bytes[0] <= 0xf6) {
         return 1;
     }
@@ -582,7 +539,7 @@ int MidiHelper::isSystemCommonMessage(midi::Message msg) {
 }
 
 // check if the message is a system realtime message
-int MidiHelper::isSystemRealtimeMessage(midi::Message msg) {
+int MidiHelper::isSystemRealtimeMessage(const midi::Message& msg) {
     if(msg.bytes[0] >= 0xf8) {
         return 1;
     }
@@ -591,7 +548,7 @@ int MidiHelper::isSystemRealtimeMessage(midi::Message msg) {
 
 // get the channel for a channel mode message
 // returns channel or -1 on error or not a channel message
-int MidiHelper::getChannelMsgChannel(midi::Message msg) {
+int MidiHelper::getChannelMsgChannel(const midi::Message& msg) {
     if(msg.bytes[0] >= 0xf0) {
         return -1;
     }
@@ -600,7 +557,7 @@ int MidiHelper::getChannelMsgChannel(midi::Message msg) {
 
 // get the pitch bend value
 // returns the value or -1 if the message is not a pitch bend
-int MidiHelper::getPitchBendVal(midi::Message msg) {
+int MidiHelper::getPitchBendVal(const midi::Message& msg) {
     if((msg.bytes[0] & 0xf0) != MIDI_PITCH_BEND) {
         return -1;
     }
@@ -627,7 +584,7 @@ midi::Message MidiHelper::encodeCCMessage(int channel, int cc, int value) {
 //  1 - SYSEX start
 //  2 - SYSEX continuation
 //  3 - SYSEX end
-int MidiHelper::isSysexMessage(midi::Message msg) {
+int MidiHelper::isSysexMessage(const midi::Message& msg) {
     int i, allLow;
     if(msg.bytes[0] == 0xf0) {
         return 1;
@@ -652,37 +609,25 @@ int MidiHelper::isSysexMessage(midi::Message msg) {
 //
 // open an input
 void MidiHelper::openInput(int slot, int deviceId) {
-    try {
-//    DEBUG("opening input slot: %d - driverId: %d - device: %d", slot, driverGetSelected(), deviceId);
-        inputs[slot].setDeviceId(deviceId);
-        if(inputs[slot].deviceId == -1) {
-            inputNames[slot] = "";
-            onlineTimeouts[slot] = 4;  // make it timeout soon
-        }
-        else {
-            inputs[slot].setChannel(-1);
-            inputNames[slot] = getInputDeviceName(slot, deviceId);
-        }
+    inputs[slot].setDeviceId(deviceId);
+    if(inputs[slot].deviceId == -1) {
+        inputNames[slot] = "";
+        onlineTimeouts[slot] = 4;  // make it timeout soon
     }
-    catch(RtMidiError &error) {
-        return;
+    else {
+        inputs[slot].setChannel(-1);
+        inputNames[slot] = getInputDeviceName(slot, deviceId);
     }
 }
 
 // open an output
 void MidiHelper::openOutput(int slot, int deviceId) {
-    try {
-//    DEBUG("opening output slot: %d - driverId: %d - device: %d", slot, driverGetSelected(), deviceId);
-        outputs[slot].setDeviceId(deviceId);
-        if(outputs[slot].deviceId == -1) {
-            outputNames[slot] = "";
-        }
-        else {
-            outputNames[slot] = getOutputDeviceName(slot, deviceId);
-        }
+    outputs[slot].setDeviceId(deviceId);
+    if(outputs[slot].deviceId == -1) {
+        outputNames[slot] = "";
     }
-    catch(RtMidiError &error) {
-        return;
+    else {
+        outputNames[slot] = getOutputDeviceName(slot, deviceId);
     }
 }
 
@@ -692,16 +637,11 @@ void MidiHelper::openInputByName(int slot, std::string name) {
     midi::Input sys;
     std::vector<int> devIds = sys.getDeviceIds();
     name.resize(deviceNameMatchLen);
-    try {
-        for(i = 0; i < (int)devIds.size(); i ++) {
-            if(getInputDeviceName(slot, devIds[i]).compare(name) == 0) {
-                openInput(slot, devIds[i]);
-                return;
-            }
+    for(i = 0; i < (int)devIds.size(); i ++) {
+        if(getInputDeviceName(slot, devIds[i]).compare(name) == 0) {
+            openInput(slot, devIds[i]);
+            return;
         }
-    }
-    catch(RtMidiError &error) {
-        return;
     }
 }
 
@@ -711,16 +651,11 @@ void MidiHelper::openOutputByName(int slot, std::string name) {
     midi::Output sys;
     std::vector<int> devIds = sys.getDeviceIds();
     name.resize(deviceNameMatchLen);
-    try {
-        for(i = 0; i < (int)devIds.size(); i ++) {
-            if(getOutputDeviceName(slot, devIds[i]).compare(name) == 0) {
-                openOutput(slot, devIds[i]);
-                return;
-            }
+    for(i = 0; i < (int)devIds.size(); i ++) {
+        if(getOutputDeviceName(slot, devIds[i]).compare(name) == 0) {
+            openOutput(slot, devIds[i]);
+            return;
         }
-    }
-    catch(RtMidiError &error) {
-        return;
     }
 }
 

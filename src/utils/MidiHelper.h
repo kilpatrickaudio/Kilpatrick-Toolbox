@@ -134,7 +134,7 @@ public:
 
     // send an output message to a port
     // returns -1 on error
-    int sendOutputMessage(int slot, midi::Message msg);
+    int sendOutputMessage(int slot, const midi::Message& msg);
 
     // reset ports - returns -1 on error
     int resetPorts(void);
@@ -170,30 +170,30 @@ public:
     // helpers
     //
     // print a message
-    static void printMessage(midi::Message msg);
+    static void printMessage(const midi::Message& msg);
 
     // check if the message is a note message
-    static int isNoteMessage(midi::Message msg);
+    static int isNoteMessage(const midi::Message& msg);
 
     // check if the message is a CC message
-    static int isControlChangeMessage(midi::Message msg);
+    static int isControlChangeMessage(const midi::Message& msg);
 
     // check if the message is a channel message
-    static int isChannelMessage(midi::Message msg);
+    static int isChannelMessage(const midi::Message& msg);
 
     // check if the message is a system common message (not including sysex)
-    static int isSystemCommonMessage(midi::Message msg);
+    static int isSystemCommonMessage(const midi::Message& msg);
 
     // check if the message is a system realtime message
-    static int isSystemRealtimeMessage(midi::Message msg);
+    static int isSystemRealtimeMessage(const midi::Message& msg);
 
     // get the channel for a channel mode message
     // returns channel or -1 on error or not a channel message
-    static int getChannelMsgChannel(midi::Message msg);
+    static int getChannelMsgChannel(const midi::Message& msg);
 
     // get the pitch bend value
     // returns the value or -1 if the message is not a pitch bend
-    static int getPitchBendVal(midi::Message msg);
+    static int getPitchBendVal(const midi::Message& msg);
 
     //
     // message encoders
@@ -208,7 +208,7 @@ public:
     //  1 - SYSEX start
     //  2 - SYSEX continuation
     //  3 - SYSEX end
-    static int isSysexMessage(midi::Message msg);
+    static int isSysexMessage(const midi::Message& msg);
 };
 
 #endif

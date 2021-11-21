@@ -46,7 +46,7 @@ void MidiCCMem::process() {
 // returns:
 //  - 1 = CC already known with this value
 //  - 0 = CC not known or different value / message type
-int MidiCCMem::handleCC(midi::Message msg) {
+int MidiCCMem::handleCC(const midi::Message& msg) {
     MidiCCHist hist;
     int chan;
     std::vector<MidiCCHist>::iterator iter;

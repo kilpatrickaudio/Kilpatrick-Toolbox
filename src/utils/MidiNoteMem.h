@@ -22,7 +22,7 @@ public:
     MidiNoteMem();
 
     // add a note
-    void addNote(midi::Message msg);
+    void addNote(const midi::Message& msg);
 
     // get the number of currently active notes
     int getNumNotes(void);

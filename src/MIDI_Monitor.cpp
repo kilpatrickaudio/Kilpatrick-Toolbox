@@ -204,10 +204,10 @@ struct MIDI_MonitorWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-        KilpatrickLabel *textField = new KilpatrickLabel(0, mm2px(Vec(20.32, 30.446)), mm2px(Vec(32.0, 32.0)));
+        KilpatrickLabel *textField = new KilpatrickLabel(0, mm2px(Vec(20.32, 30.446)), mm2px(Vec(36.0, 32.0)));
         textField->rad = 1.0;
         textField->fontFilename = asset::plugin(pluginInstance, "res/components/fixedsys.ttf");
-        textField->fontSize = 12.0;
+        textField->fontSize = 11.5;
         textField->text = "0001 1 B0  1 16\n" \
             "0002 1 B0  2 16\n" \
             "0003 1 B0  3 16\n" \
