@@ -310,29 +310,24 @@ int MidiHelper::isDetected(int slot) {
 // get an input message from a port
 // returns -1 on error, 0 for no message, 1 if message received
 int MidiHelper::getInputMessage(int slot, midi::Message *msg) {
-/*
-    // XXX new version
-    int i;
-    midi::Message inMsg;
     if(slot < 0 || slot >= (int)inputs.size()) {
         return -1;
     }
-    if(inputs[slot].tryPop(&inMsg, INT64_MAX)) {
+    // drain out the entire queue
+    while(inputs[slot].tryPop(msg, INT64_MAX)) {
+        if(msg->getSize() < 1) {
+            continue;  // try again
+        }
         // inspect the message for active sensing and steal it
-        if(inMsg.bytes[0] == MIDI_ACTIVE_SENSING) {
+        if(msg->bytes[0] == MIDI_ACTIVE_SENSING) {
             onlineTimeouts[slot] = ONLINE_TIMEOUT;
-            return 0;
+            continue;  // try again
         }
         // return 1 saying the caller has a message they can use
-        msg->setSize(inMsg.getSize());
-        for(i = 0; i < inMsg.getSize(); i ++) {
-            msg->bytes[i] = inMsg.bytes[i];
-        }
         return 1;
     }
     return 0;
-*/
-    // original version
+/*
     if(slot < 0 || slot >= (int)inputs.size()) {
         return -1;
     }
@@ -346,6 +341,7 @@ int MidiHelper::getInputMessage(int slot, midi::Message *msg) {
         return 1;
     }
     return 0;
+*/
 }
 
 // send an output message to a port
@@ -507,6 +503,9 @@ void MidiHelper::printMessage(const midi::Message& msg) {
 
 // check if the message is a note message
 int MidiHelper::isNoteMessage(const midi::Message& msg) {
+    if(msg.getSize() < 3) {
+        return 0;
+    }
     if((msg.bytes[0] & 0xf0) == MIDI_NOTE_OFF ||
             (msg.bytes[0] & 0xf0) == MIDI_NOTE_ON) {
         return 1;
@@ -516,6 +515,9 @@ int MidiHelper::isNoteMessage(const midi::Message& msg) {
 
 // check if the message is a CC message
 int MidiHelper::isControlChangeMessage(const midi::Message& msg) {
+    if(msg.getSize() < 3) {
+        return 0;
+    }
     if((msg.bytes[0] & 0xf0) == MIDI_CONTROL_CHANGE) {
         return 1;
     }
@@ -524,6 +526,9 @@ int MidiHelper::isControlChangeMessage(const midi::Message& msg) {
 
 // check if the message is a channel message
 int MidiHelper::isChannelMessage(const midi::Message& msg) {
+    if(msg.getSize() < 2) {
+        return 0;
+    }
     if((msg.bytes[0] & 0xf0) < 0xf0) {
         return 1;
     }
@@ -532,6 +537,9 @@ int MidiHelper::isChannelMessage(const midi::Message& msg) {
 
 // check if the message is a system common message (not including sysex)
 int MidiHelper::isSystemCommonMessage(const midi::Message& msg) {
+    if(msg.getSize() < 1) {
+        return 0;
+    }
     if(msg.bytes[0] >= 0xf1 && msg.bytes[0] <= 0xf6) {
         return 1;
     }
@@ -540,6 +548,9 @@ int MidiHelper::isSystemCommonMessage(const midi::Message& msg) {
 
 // check if the message is a system realtime message
 int MidiHelper::isSystemRealtimeMessage(const midi::Message& msg) {
+    if(msg.getSize() < 1) {
+        return 0;
+    }
     if(msg.bytes[0] >= 0xf8) {
         return 1;
     }
@@ -549,6 +560,9 @@ int MidiHelper::isSystemRealtimeMessage(const midi::Message& msg) {
 // get the channel for a channel mode message
 // returns channel or -1 on error or not a channel message
 int MidiHelper::getChannelMsgChannel(const midi::Message& msg) {
+    if(msg.getSize() < 2) {
+        return 0;
+    }
     if(msg.bytes[0] >= 0xf0) {
         return -1;
     }
@@ -558,6 +572,9 @@ int MidiHelper::getChannelMsgChannel(const midi::Message& msg) {
 // get the pitch bend value
 // returns the value or -1 if the message is not a pitch bend
 int MidiHelper::getPitchBendVal(const midi::Message& msg) {
+    if(msg.getSize() < 3) {
+        return 0;
+    }
     if((msg.bytes[0] & 0xf0) != MIDI_PITCH_BEND) {
         return -1;
     }
@@ -571,7 +588,6 @@ int MidiHelper::getPitchBendVal(const midi::Message& msg) {
 // returns the encoded message
 midi::Message MidiHelper::encodeCCMessage(int channel, int cc, int value) {
     midi::Message msg;
-    msg.setSize(3);
     msg.bytes[0] = 0xb0 | (channel & 0x0f);
     msg.bytes[1] = cc;
     msg.bytes[2] = value;
@@ -586,6 +602,9 @@ midi::Message MidiHelper::encodeCCMessage(int channel, int cc, int value) {
 //  3 - SYSEX end
 int MidiHelper::isSysexMessage(const midi::Message& msg) {
     int i, allLow;
+    if(msg.getSize() < 1) {
+        return 0;
+    }
     if(msg.bytes[0] == 0xf0) {
         return 1;
     }

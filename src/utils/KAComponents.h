@@ -312,6 +312,12 @@ struct KilpatrickKnobBlackRed : KilpatrickKnob {
     }
 };
 
+// black knob with red - mini
+struct KilpatrickKnobBlackRedMini : KilpatrickKnob {
+    KilpatrickKnobBlackRedMini() : KilpatrickKnob(asset::plugin(pluginInstance, "res/components/knob-black_red-mini.svg")) {
+    }
+};
+
 // black aluminum knob with pointer
 struct KilpatrickKnobBlackAlumPointer : KilpatrickKnob {
     KilpatrickKnobBlackAlumPointer() : KilpatrickKnob(asset::plugin(pluginInstance, "res/components/knob-black-alum-pointer.svg")) {

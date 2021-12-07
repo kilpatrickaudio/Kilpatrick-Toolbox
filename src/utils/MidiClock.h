@@ -31,6 +31,9 @@ private:
     MidiClockHandler *handler;
     int32_t runTickCount;
     int runState;
+    // state we can check
+    int resetf;  // clears after reading
+    int beatf;  // clears after reading
 
 public:
     // constructor
@@ -42,6 +45,18 @@ public:
     // send message to the MIDI clock (from a port)
     // this may cause callbacks to be called
     void sendMessage(const midi::Message& msg);
+
+    // get the run state
+    int getRunState(void);
+
+    // check if we got a beat - clears after reading
+    int getBeat(void);
+
+    // check if we were reset - clears after reading
+    int getReset(void);
+
+    // get the current tick position
+    int getTickCount(void);
 };
 
 #endif

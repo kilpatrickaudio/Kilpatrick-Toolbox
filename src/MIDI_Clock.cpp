@@ -400,10 +400,12 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
         resetOutLedPulse.timeout = LED_PULSE_LEN;
         outputDivCount = 0;
 
-        // MIDI out
-        msg.setSize(1);
-        msg.bytes[0] = MIDI_CLOCK_START;
-        cvMidiOut->sendOutputMessage(msg);
+        // if we are running send the reset right away
+        if(midiClock.getRunState()) {
+            msg.setSize(1);
+            msg.bytes[0] = MIDI_CLOCK_START;
+            cvMidiOut->sendOutputMessage(msg);
+        }
     }
 
     // external sync state changed
