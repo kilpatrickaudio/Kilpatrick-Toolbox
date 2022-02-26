@@ -16,8 +16,9 @@ buying one of our hardware products or commercial VCV Rack modules such as the K
 
 ## Licence
 
-All code in this repository is licensed under GPL 3.0 or later. All panel designs, graphics and
-logos are copyright Kilpatrick Audio and may not be redistributed without permission.
+All code in this repository is licensed under GPL 3.0 or later. All panel designs, graphics, logos
+and other media files are copyright Kilpatrick Audio and/or others and may not be used, forked or
+redistributed without permission.
 
 ---
 ### vMIDI
