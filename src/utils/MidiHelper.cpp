@@ -10,6 +10,7 @@
 #include "MidiHelper.h"
 #include <string>
 #include "MidiProtocol.h"
+#include "PLog.h"
 #define MIDI_HELPER_HANDLE_RTMIDI  // uncomment to handle RtMidi exceptions
 
 // create a driver chooser menu item
@@ -327,21 +328,6 @@ int MidiHelper::getInputMessage(int slot, midi::Message *msg) {
         return 1;
     }
     return 0;
-/*
-    if(slot < 0 || slot >= (int)inputs.size()) {
-        return -1;
-    }
-    if(inputs[slot].tryPop(msg, INT64_MAX)) {
-        // inspect the message for active sensing and steal it
-        if(msg->bytes[0] == MIDI_ACTIVE_SENSING) {
-            onlineTimeouts[slot] = ONLINE_TIMEOUT;
-            return 0;
-        }
-        // return 1 saying the caller has a message they can use
-        return 1;
-    }
-    return 0;
-*/
 }
 
 // send an output message to a port
@@ -642,6 +628,7 @@ void MidiHelper::openInput(int slot, int deviceId) {
 // open an output
 void MidiHelper::openOutput(int slot, int deviceId) {
     outputs[slot].setDeviceId(deviceId);
+    outputs[slot].setChannel(-1);  // make sure channel doesn't get overriden by MIDI backend
     if(outputs[slot].deviceId == -1) {
         outputNames[slot] = "";
     }
