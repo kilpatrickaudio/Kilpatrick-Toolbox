@@ -69,6 +69,30 @@ struct PosEdgeDetect {
     }
 };
 
+// detect held switch
+struct HoldSwDetect {
+    int HOLD_TIME = 2000;  // 2000ms at 1ms task rate
+    int holdTimeout;
+
+    HoldSwDetect() {
+        holdTimeout = 0;
+    }
+
+    // update the old - returns 1 if hold expired
+    int update(int newVal) {
+        if(newVal) {
+            holdTimeout ++;
+            if(holdTimeout == HOLD_TIME) {
+                return 1;
+            }
+        }
+        else {
+            holdTimeout = 0;
+        }
+        return 0;
+    }
+};
+
 // parameter value change detector
 struct ParamChangeDetect {
     float changeAmount;
@@ -167,6 +191,9 @@ std::string factorToPercentStr(float val);
 // - <1kHz = xxx.yHz
 // - >=1kHz - xxxxx.ykHz
 std::string freqToStr(float freq);
+
+// possibly truncate the prefix of a string to make it maxlen
+std::string truncateStrPrefix(std::string str, int maxlen);
 
 // format a string the right way
 inline std::string format(std::string format, ...) {

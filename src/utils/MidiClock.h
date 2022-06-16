@@ -48,15 +48,6 @@ public:
 
     // get the run state
     int getRunState(void);
-
-    // check if we got a beat - clears after reading
-    int getBeat(void);
-
-    // check if we were reset - clears after reading
-    int getReset(void);
-
-    // get the current tick position
-    int getTickCount(void);
 };
 
 #endif

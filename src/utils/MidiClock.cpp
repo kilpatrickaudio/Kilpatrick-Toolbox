@@ -27,6 +27,7 @@ void MidiClock::registerHandler(MidiClockHandler *handler) {
 // send message to the MIDI clock (from a port)
 // this may cause callbacks to be called
 void MidiClock::sendMessage(const midi::Message& msg) {
+    int temp;
     if(msg.getSize() != 1) {
         return;
     }
@@ -79,28 +80,4 @@ void MidiClock::sendMessage(const midi::Message& msg) {
 // get the run state
 int MidiClock::getRunState(void) {
     return runState;
-}
-
-
-// check if we got a beat - clears after reading
-int MidiClock::getBeat(void) {
-    if(beatf) {
-        beatf = 0;
-        return 1;
-    }
-    return 0;
-}
-
-// check if we were reset - clears after reading
-int MidiClock::getReset(void) {
-    if(resetf) {
-        resetf = 0;
-        return 1;
-    }
-    return 0;
-}
-
-// get the current tick position
-int MidiClock::getTickCount(void) {
-    return runTickCount;
 }

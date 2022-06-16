@@ -109,7 +109,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     static constexpr int OUTPUT_DIV_MAX = 24;
     static constexpr int OUT_PULSE_LEN = 4;
     static constexpr int LED_PULSE_LEN = 50;
-    static constexpr int AUTOSTART_TIMEOUT = 50;
+    static constexpr int AUTOSTART_TIMEOUT = 200;
     static constexpr int ANALOG_CLOCK_TIMEOUT = 2000;
     static constexpr int RUN_IN_IGNORE_TIMEOUT = 50;
     dsp::ClockDivider taskTimer;
@@ -342,6 +342,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     // a beat was crossed
     void midiClockBeatCrossed(void) override {
         int temp;
+        // check if we changed the output divider
         temp = (int)params[OUTPUT_DIV].getValue();
         if(outputDiv != temp) {
             outputDiv = temp;

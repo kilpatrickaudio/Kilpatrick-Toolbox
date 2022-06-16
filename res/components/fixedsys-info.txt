@@ -1,0 +1,4 @@
+2022-06-15:
+- original fixedsys.ttf font replaced by SystemTTF (renamed)
+- https://github.com/Padzk/SystemTTF
+- license is Creative Commons Zero v1.0 Universal
