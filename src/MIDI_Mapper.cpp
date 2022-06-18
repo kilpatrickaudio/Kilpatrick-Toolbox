@@ -57,7 +57,7 @@ struct MIDI_Mapper : Module, KilpatrickLabelHandler {
 		NUM_LIGHTS
 	};
 
-    #define MAP_TIMEOUT (MIDI_RT_TASK_RATE * 4)  // 4 seconds
+    #define MAP_TIMEOUT (RT_TASK_RATE * 4)  // 4 seconds
     #define NUM_MAP_CHANS 6
     #define UNMAP -1.0f
     dsp::ClockDivider taskTimer;
@@ -95,7 +95,7 @@ struct MIDI_Mapper : Module, KilpatrickLabelHandler {
         configOutput(MIDI_OUT, "MIDI OUT");
         cvMidiIn = new CVMidi(&inputs[MIDI_IN], 1);
         cvMidiOut = new CVMidi(&outputs[MIDI_OUT], 0);
-        ccMem.setTimeout(MIDI_RT_TASK_RATE * 2);  // 2 seconds
+        ccMem.setTimeout(RT_TASK_RATE * 2);  // 2 seconds
         onReset();
         onSampleRateChange();
 	}
@@ -156,7 +156,7 @@ struct MIDI_Mapper : Module, KilpatrickLabelHandler {
 
     // samplerate changed
     void onSampleRateChange(void) override {
-        taskTimer.setDivision((int)(APP->engine->getSampleRate() / MIDI_RT_TASK_RATE));
+        taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
     }
 
     // module initialize

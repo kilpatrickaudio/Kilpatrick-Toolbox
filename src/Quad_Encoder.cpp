@@ -58,7 +58,8 @@ struct Quad_Encoder : Module {
 		LIGHTS_LEN
 	};
     static constexpr int AUDIO_BUFLEN = 64;
-    static constexpr int RT_TASK_RATE = 100;
+//    static constexpr int RT_TASK_RATE = 100;
+    static constexpr int RT_TASK_DIVIDER = 40;
     dsp::ClockDivider taskTimer;
     static constexpr float AUDIO_IN_GAIN = 0.1f;
     static constexpr float AUDIO_OUT_GAIN = 10.0f;  // save mixing headroom
@@ -260,7 +261,7 @@ struct Quad_Encoder : Module {
 
     // samplerate changed
     void onSampleRateChange(void) override {
-        taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
+        taskTimer.setDivision((int)(APP->engine->getSampleRate() / (RT_TASK_RATE / RT_TASK_DIVIDER)));
         hpfFl.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
         hpfFr.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
         hpfSl.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());

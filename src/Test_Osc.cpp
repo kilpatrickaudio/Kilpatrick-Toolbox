@@ -102,7 +102,6 @@ struct Test_Osc : Module, TestOscDisplaySource {
         ON_ON
     };
     static constexpr int NUM_FREQS = 31;
-    static constexpr int RT_TASK_RATE = 1000;
     static constexpr float AUDIO_OUT_GAIN = 10.0f;
     static constexpr float SWEEP_START_FREQ = 20.0f;
     static constexpr float SWEEP_END_FREQ = 20000.0f;

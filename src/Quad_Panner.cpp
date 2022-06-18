@@ -57,7 +57,6 @@ struct Quad_Panner : Module, KilpatrickJoystickHandler {
 		LIGHTS_LEN
 	};
 
-    static constexpr int RT_TASK_RATE = 1000;
     static constexpr float CV_IN_SCALE = 0.2;  // -5V to +5V
     dsp::ClockDivider taskTimer;
     float sumPosX, sumPosY;  // -1.0 to +1.0

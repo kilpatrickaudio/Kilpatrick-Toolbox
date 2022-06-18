@@ -135,7 +135,7 @@ struct MIDI_Merger : Module {
 
     // samplerate changed
     void onSampleRateChange(void) override {
-        taskTimer.setDivision((int)(APP->engine->getSampleRate() / MIDI_RT_TASK_RATE));
+        taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
     }
 
     // module initialize

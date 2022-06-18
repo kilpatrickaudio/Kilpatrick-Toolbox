@@ -107,11 +107,11 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 	};
     static constexpr int OUTPUT_DIV_MIN = 1;
     static constexpr int OUTPUT_DIV_MAX = 24;
-    static constexpr int OUT_PULSE_LEN = 4;
-    static constexpr int LED_PULSE_LEN = 50;
-    static constexpr int AUTOSTART_TIMEOUT = 200;
-    static constexpr int ANALOG_CLOCK_TIMEOUT = 2000;
-    static constexpr int RUN_IN_IGNORE_TIMEOUT = 50;
+    static constexpr int OUT_PULSE_LEN = 16;
+    static constexpr int LED_PULSE_LEN = 200;
+    static constexpr int AUTOSTART_TIMEOUT = 800;
+    static constexpr int ANALOG_CLOCK_TIMEOUT = 8000;
+    static constexpr int RUN_IN_IGNORE_TIMEOUT = 200;
     dsp::ClockDivider taskTimer;
     CVMidi *cvMidiIn;
     CVMidi *cvMidiOut;
@@ -161,7 +161,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 		configOutput(RESET_OUT, "RESET OUT");
         cvMidiIn = new CVMidi(&inputs[MIDI_IN], 1);
         cvMidiOut = new CVMidi(&outputs[MIDI_OUT], 0);
-        midiClock.setTaskInterval(MIDI_RT_TASK_RATE);
+        midiClock.setTaskInterval(1000000 / RT_TASK_RATE);
         midiClock.setInternalPpq(24);
         midiClock.registerHandler(this);
         onReset();
@@ -283,7 +283,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 
     // samplerate changed
     void onSampleRateChange(void) override {
-        taskTimer.setDivision((int)(APP->engine->getSampleRate() / MIDI_RT_TASK_RATE));
+        taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
     }
 
     // module initialize

@@ -42,9 +42,9 @@ private:
     MidiRepeaterSender *sender;
     int index;  // index to use to identify sender
     // default timing
-    #define REPEAT_SEND_INTERVAL (MIDI_RT_TASK_RATE * 0.5f)  // 0.5s
-    #define REPEAT_HIST_TIMEOUT (MIDI_RT_TASK_RATE * 2.0f)  // 2.0s
-    #define REPEAT_CHECK_INTERVAL (MIDI_RT_TASK_RATE * 0.1f)  // 0.1s
+    #define REPEAT_SEND_INTERVAL (RT_TASK_RATE * 0.5f)  // 0.5s
+    #define REPEAT_HIST_TIMEOUT (RT_TASK_RATE * 2.0f)  // 2.0s
+    #define REPEAT_CHECK_INTERVAL (RT_TASK_RATE * 0.1f)  // 0.1s
 
 public:
     // repeater mode

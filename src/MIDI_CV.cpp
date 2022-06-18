@@ -77,7 +77,7 @@ struct MIDI_CV : Module {
     };
     int learnMode;
     int learnTimeout;
-    #define LEARN_TIMEOUT (MIDI_RT_TASK_RATE * 4)  // 2 seconds
+    #define LEARN_TIMEOUT (RT_TASK_RATE * 4)  // 2 seconds
     enum {
         CV_MODE_CC,
         CV_MODE_POLY,
@@ -93,7 +93,7 @@ struct MIDI_CV : Module {
     float outputVals[NUM_OUTPUTS];
     putils::Pulser outputPulsers[NUM_OUTPUTS];
     putils::ParamChangeDetect outputChangeDetect[NUM_OUTPUTS];
-    #define OUTPUT_LED_PULSE (MIDI_RT_TASK_RATE / 5)  // 200ms
+    #define OUTPUT_LED_PULSE (RT_TASK_RATE / 5)  // 200ms
 
     // constructor
 	MIDI_CV() {
@@ -112,7 +112,7 @@ struct MIDI_CV : Module {
         configOutput(G2_OUT, "G2 OUT");
         configOutput(V3_OUT, "V3 OUT");
         cvMidiIn = new CVMidi(&inputs[MIDI_IN], 1);
-        ccMem.setTimeout(MIDI_RT_TASK_RATE * 2);  // 2 seconds
+        ccMem.setTimeout(RT_TASK_RATE * 2);  // 2 seconds
         timerDiv = 0;
         onReset();
         onSampleRateChange();
@@ -341,7 +341,7 @@ struct MIDI_CV : Module {
 
     // samplerate changed
     void onSampleRateChange(void) override {
-        taskTimer.setDivision((int)(APP->engine->getSampleRate() / MIDI_RT_TASK_RATE));
+        taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
     }
 
     // module initialize

@@ -54,7 +54,7 @@ struct MIDI_Channel : Module, KilpatrickLabelHandler {
     dsp::ClockDivider taskTimer;
     CVMidi *cvMidiIn;
     CVMidi *cvMidiOut[2];
-    #define DOUBLE_CLICK_TIMEOUT (MIDI_RT_TASK_RATE * 0.3)
+    #define DOUBLE_CLICK_TIMEOUT (RT_TASK_RATE * 0.3)
     putils::Pulser doubleClickPulser;
     MidiNoteMem midiNoteMem[2];
     int resetOutputNotes;
@@ -155,7 +155,7 @@ struct MIDI_Channel : Module, KilpatrickLabelHandler {
 
     // samplerate changed
     void onSampleRateChange(void) override {
-        taskTimer.setDivision((int)(APP->engine->getSampleRate() / MIDI_RT_TASK_RATE));
+        taskTimer.setDivision((int)(APP->engine->getSampleRate() / RT_TASK_RATE));
     }
 
     // module initialize
