@@ -45,7 +45,7 @@ int MidiRepeater::getMode(void) {
 
 // set the mode
 void MidiRepeater::setMode(int mode) {
-    if(mode < RepeaterMode::MODE_OFF || mode > RepeaterMode::MODE_GEN) {
+    if(mode < 0 || mode >= RepeaterMode::MODE_NUM_MODES) {
         return;
     }
     this->mode = mode;

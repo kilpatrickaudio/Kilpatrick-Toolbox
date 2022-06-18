@@ -133,6 +133,7 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler, MidiRepeaterSender {
     // module initialize
     void onReset(void) override {
         lastNote = -1;
+        repeatHist.reset();
     }
 
     // get the CC base

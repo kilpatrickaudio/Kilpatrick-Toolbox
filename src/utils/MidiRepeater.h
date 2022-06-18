@@ -51,7 +51,8 @@ public:
     enum RepeaterMode {
         MODE_OFF = 0,  // no repeat
         MODE_ON,  // repeat pass-through
-        MODE_GEN  // repeat generate
+        MODE_GEN,  // repeat generate
+        MODE_NUM_MODES
     };
 
     // constructor
