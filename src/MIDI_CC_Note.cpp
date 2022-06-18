@@ -183,7 +183,7 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler, MidiRepeaterSender {
         midi::Message sendMsg;
         int note = (int)params[CC_BASE].getValue() + msg.bytes[1] +
             ((int)params[OCT_OFFSET].getValue() * 12);
-        PDEBUG("note: %d - offset: %d", note, (int)params[OCT_OFFSET].getValue());
+//        PDEBUG("note: %d - offset: %d", note, (int)params[OCT_OFFSET].getValue());
         if(note < 0 || note > 127) return;
         int vel = (int)((float)msg.bytes[2] * params[VEL_POT].getValue());
         sendMsg = MidiHelper::encodeNoteOnMessage(0, note, vel);
