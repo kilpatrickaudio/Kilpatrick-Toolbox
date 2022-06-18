@@ -407,6 +407,12 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
             msg.bytes[0] = MIDI_CLOCK_START;
             cvMidiOut->sendOutputMessage(msg);
         }
+        // send song position pointer
+        msg.setSize(3);
+        msg.bytes[0] = MIDI_SONG_POSITION;
+        msg.bytes[1] = 0;
+        msg.bytes[2] = 0;
+        cvMidiOut->sendOutputMessage(msg);
     }
 
     // external sync state changed

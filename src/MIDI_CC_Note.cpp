@@ -24,10 +24,12 @@
 #include "utils/CVMidi.h"
 #include "utils/KAComponents.h"
 #include "utils/MenuHelper.h"
+#include "utils/MidiHelper.h"
 #include "utils/MidiProtocol.h"
+#include "utils/MidiRepeater.h"
 #include "utils/PUtils.h"
 
-struct MIDI_CC_Note : Module, KilpatrickLabelHandler {
+struct MIDI_CC_Note : Module, KilpatrickLabelHandler, MidiRepeaterSender {
 	enum ParamId {
 		VEL_POT,
 		OCT_UP_SW,
@@ -57,6 +59,7 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler {
     dsp::ClockDivider taskTimer;
     CVMidi *cvMidiIn;
     CVMidi *cvMidiOut;
+    MidiRepeater repeatHist;
     putils::PosEdgeDetect octUpEdge;
     putils::PosEdgeDetect octNormEdge;
     putils::PosEdgeDetect octDownEdge;
@@ -76,6 +79,8 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler {
 		configOutput(MIDI_OUT, "MIDI OUT");
         cvMidiIn = new CVMidi(&inputs[MIDI_IN], 1);
         cvMidiOut = new CVMidi(&outputs[MIDI_OUT], 0);
+        repeatHist.registerSender(this, 0);
+        repeatHist.setMode(MidiRepeater::RepeaterMode::MODE_OFF);
         onReset();
         onSampleRateChange();
 	}
@@ -98,6 +103,8 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler {
         if(taskTimer.process()) {
             // handle MIDI input
             while(cvMidiIn->getInputMessage(&msg)) {
+                repeatHist.handleMessage(msg);
+/*
                 if(msg.getSize() < 3) continue;
                 if((msg.bytes[0] & 0xf0) != MIDI_CONTROL_CHANGE) {
                     continue;
@@ -114,6 +121,7 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler {
                 cvMidiOut->sendOutputMessage(msg);
                 lastNote = note;
                 lastNoteTimeout.timeout = LAST_NOTE_TIMEOUT;
+*/
             }
             lastNoteTimeout.update();
 
@@ -129,6 +137,9 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler {
                 params[OCT_OFFSET].setValue(putils::clamp((int)params[OCT_OFFSET].getValue() - 1,
                     OCT_OFFSET_MIN, OCT_OFFSET_MAX));
             }
+
+            // run tasks for the repeater
+            repeatHist.taskTimer();
         }
 	}
 
@@ -164,6 +175,21 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler {
             return putils::format("N:%d", lastNote);
         }
         return putils::format("T:%d", (int)params[OCT_OFFSET].getValue());
+    }
+
+    // send an output message to a port - callback from repeater
+    // returns -1 on error
+    void sendMessage(const midi::Message& msg, int index) {
+        midi::Message sendMsg;
+        int note = (int)params[CC_BASE].getValue() + msg.bytes[1] +
+            ((int)params[OCT_OFFSET].getValue() * 12);
+        PDEBUG("note: %d - offset: %d", note, (int)params[OCT_OFFSET].getValue());
+        if(note < 0 || note > 127) return;
+        int vel = (int)((float)msg.bytes[2] * params[VEL_POT].getValue());
+        sendMsg = MidiHelper::encodeNoteOnMessage(0, note, vel);
+        cvMidiOut->sendOutputMessage(sendMsg);
+        lastNote = note;
+        lastNoteTimeout.timeout = LAST_NOTE_TIMEOUT;
     }
 };
 

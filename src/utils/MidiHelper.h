@@ -198,9 +198,21 @@ public:
     //
     // message encoders
     //
+    // encode a note on message
+    // returns the encoded message
+    static midi::Message encodeNoteOnMessage(int channel, int note, int velocity);
+
+    // encode a note on message
+    // returns the encoded message
+    static midi::Message encodeNoteOffMessage(int channel, int note);
+
     // encode a CC message
     // returns the encoded message
     static midi::Message encodeCCMessage(int channel, int cc, int value);
+
+
+    // copy a message
+    static void copyMessage(midi::Message *dest, const midi::Message& src);
 
     // check if the message is a SYSEX message
     // returns:

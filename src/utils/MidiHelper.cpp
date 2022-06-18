@@ -570,14 +570,45 @@ int MidiHelper::getPitchBendVal(const midi::Message& msg) {
 //
 // message encoders
 //
+// encode a note on message
+// returns the encoded message
+midi::Message MidiHelper::encodeNoteOnMessage(int channel, int note, int velocity) {
+    midi::Message msg;
+    msg.setSize(3);
+    msg.bytes[0] = 0x90 | (channel & 0x0f);
+    msg.bytes[1] = note;
+    msg.bytes[2] = velocity;
+    return msg;
+}
+
+// encode a note on message
+// returns the encoded message
+midi::Message MidiHelper::encodeNoteOffMessage(int channel, int note) {
+    midi::Message msg;
+    msg.setSize(3);
+    msg.bytes[0] = 0x80 | (channel & 0x0f);
+    msg.bytes[1] = note;
+    msg.bytes[2] = 0;
+    return msg;
+}
+
 // encode a CC message
 // returns the encoded message
 midi::Message MidiHelper::encodeCCMessage(int channel, int cc, int value) {
     midi::Message msg;
+    msg.setSize(3);
     msg.bytes[0] = 0xb0 | (channel & 0x0f);
     msg.bytes[1] = cc;
     msg.bytes[2] = value;
     return msg;
+}
+
+// copy a message
+void MidiHelper::copyMessage(midi::Message *dest, const midi::Message& src) {
+    dest->setSize(src.getSize());
+    dest->bytes[0] = src.bytes[0];
+    dest->bytes[1] = src.bytes[1];
+    dest->bytes[2] = src.bytes[2];
 }
 
 // check if the message is a SYSEX message

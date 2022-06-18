@@ -24,19 +24,10 @@
 #include "utils/CVMidi.h"
 #include "utils/KAComponents.h"
 #include "utils/MidiHelper.h"
+#include "utils/MidiRepeater.h"
 #include "utils/PUtils.h"
 
-struct MIDI_Repeater_Hist {
-    midi::Message msg;
-    int timeout;
-
-    MIDI_Repeater_Hist() {
-        msg.setSize(0);
-        timeout = 0;
-    }
-};
-
-struct MIDI_Repeater : Module {
+struct MIDI_Repeater : Module, MidiRepeaterSender {
 	enum ParamIds {
 		MODE_SW,
 		NUM_PARAMS
@@ -63,21 +54,11 @@ struct MIDI_Repeater : Module {
 		NUM_LIGHTS
 	};
 
-    #define REPEAT_SEND_INTERVAL (MIDI_RT_TASK_RATE * 0.5f)  // 0.5s
-    #define REPEAT_HIST_TIMEOUT (MIDI_RT_TASK_RATE * 2.0f)  // 2.0s
-    #define REPEAT_CHECK_INTERVAL (MIDI_RT_TASK_RATE * 0.1f)  // 0.1s
     #define NUM_PORTS 3
     dsp::ClockDivider taskTimer;
     CVMidi *cvMidiIns[NUM_PORTS];
     CVMidi *cvMidiOuts[NUM_PORTS];
-    enum {
-        MODE_OFF,
-        MODE_ON,
-        MODE_GEN
-    };
-    int mode;
-    int repeatCheck;
-    std::vector<MIDI_Repeater_Hist> repeatHist[NUM_PORTS];
+    MidiRepeater repeaterHist[NUM_PORTS];
 
     // constructor
 	MIDI_Repeater() {
@@ -94,7 +75,7 @@ struct MIDI_Repeater : Module {
         for(port = 0; port < NUM_PORTS; port ++) {
             cvMidiIns[port] = new CVMidi(&inputs[MIDI_IN1 + port], 1);
             cvMidiOuts[port] = new CVMidi(&outputs[MIDI_OUT1 + port], 0);
-            repeatHist[port].resize(128);
+            repeaterHist[port].registerSender(this, port);
         }
         onReset();
         onSampleRateChange();
@@ -112,7 +93,7 @@ struct MIDI_Repeater : Module {
     // process a sample
 	void process(const ProcessArgs& args) override {
         midi::Message msg;
-        int port, cc;
+        int port, temp;
 
         // handle CV MIDI
         for(port = 0; port < NUM_PORTS; port ++) {
@@ -127,33 +108,7 @@ struct MIDI_Repeater : Module {
                 // input message
                 while(cvMidiIns[port]->getInputMessage(&msg)) {
 //                    MidiHelper::printMessage(&msg);
-                    // if it's a CC remember it in the history
-                    if(MidiHelper::isControlChangeMessage(msg)) {
-                        switch(mode) {
-                            case MODE_OFF:
-                                // if we have a message in timeout skip the echo
-                                if(repeatHist[port][msg.bytes[1]].msg.bytes[0] == msg.bytes[0] &&
-                                        repeatHist[port][msg.bytes[1]].msg.bytes[2] == msg.bytes[2] &&
-                                        repeatHist[port][msg.bytes[1]].timeout > 0) {
-                                    repeatHist[port][msg.bytes[1]].timeout = REPEAT_HIST_TIMEOUT;
-                                }
-                                else {
-                                    repeatHist[port][msg.bytes[1]].msg = msg;  // store message
-                                    repeatHist[port][msg.bytes[1]].timeout = REPEAT_HIST_TIMEOUT;
-                                    cvMidiOuts[port]->sendOutputMessage(msg);  // echo
-                                }
-                                break;
-                            case MODE_GEN:  // pass through and remember
-                                repeatHist[port][msg.bytes[1]].msg = msg;  // store message
-                                repeatHist[port][msg.bytes[1]].timeout = REPEAT_SEND_INTERVAL;  // reset send interval
-                                cvMidiOuts[port]->sendOutputMessage(msg);  // echo
-                                break;
-                            case MODE_ON:  // pass any repeats through unchanged
-                            default:
-                                cvMidiOuts[port]->sendOutputMessage(msg);  // echo
-                                break;
-                        }
-                    }
+                    repeaterHist[port].handleMessage(msg);  // let the repeater handle all incoming MIDI
                 }
                 // MIDI LEDs
                 lights[MIDI_IN1_LED + port].setBrightness(cvMidiIns[port]->getLedState());
@@ -162,46 +117,24 @@ struct MIDI_Repeater : Module {
 
             // check mode
             if(params[MODE_SW].getValue() > 1.5f) {
-                mode = MODE_GEN;
+                temp = MidiRepeater::RepeaterMode::MODE_GEN;
             }
             else if(params[MODE_SW].getValue() > 0.5f) {
-                mode = MODE_ON;
+                temp = MidiRepeater::RepeaterMode::MODE_ON;
             }
             else {
-                mode = MODE_OFF;
+                temp = MidiRepeater::RepeaterMode::MODE_OFF;
+            }
+            if(temp != repeaterHist[0].getMode()) {
+                for(port = 0; port < NUM_PORTS; port ++) {
+                    repeaterHist[port].setMode(temp);
+                }
             }
 
-            // repeat check
-            if(repeatCheck == REPEAT_CHECK_INTERVAL) {
-                for(port = 0; port < NUM_PORTS; port ++) {
-                    for(cc = 0; cc < 128; cc ++) {
-                        if(repeatHist[port][cc].timeout == 0) {
-                            continue;
-                        }
-                        switch(mode) {
-                            case MODE_OFF:  // time out repeat blocking
-                                repeatHist[port][cc].timeout -= REPEAT_CHECK_INTERVAL;
-                                if(repeatHist[port][cc].timeout <= 0) {
-                                    repeatHist[port][cc].timeout = 0;
-                                }
-                                break;
-                            case MODE_GEN:
-                                repeatHist[port][cc].timeout -= REPEAT_CHECK_INTERVAL;
-                                if(repeatHist[port][cc].timeout <= 0) {
-                                    cvMidiOuts[port]->sendOutputMessage(repeatHist[port][cc].msg);  // echo
-                                    repeatHist[port][cc].timeout = REPEAT_SEND_INTERVAL;
-                                }
-                                break;
-                            case MODE_ON:
-                            default:
-                                // no action
-                                break;
-                        }
-                    }
-                }
-                repeatCheck = 0;
+            // run tasks for each port
+            for(port = 0; port < NUM_PORTS; port ++) {
+                repeaterHist[port].taskTimer();
             }
-            repeatCheck ++;
         }
 	}
 
@@ -216,8 +149,21 @@ struct MIDI_Repeater : Module {
         for(i = 0; i < NUM_LIGHTS; i ++) {
             lights[i].setBrightness(0.0f);
         }
-        mode = MODE_OFF;
-        repeatCheck = 0;
+        for(i = 0; i < NUM_PORTS; i ++) {
+            repeaterHist[i].reset();
+        }
+    }
+
+    //
+    // callbacks
+    //
+    // send an output message to a port - callback from repeater
+    // returns -1 on error
+    void sendMessage(const midi::Message& msg, int index) {
+        if(index < 0 || index >= NUM_PORTS) {
+            return;
+        }
+        cvMidiOuts[index]->sendOutputMessage(msg);
     }
 };
 
