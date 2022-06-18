@@ -159,7 +159,7 @@ struct MIDI_Repeater : Module, MidiRepeaterSender {
     //
     // send an output message to a port - callback from repeater
     // returns -1 on error
-    void sendMessage(const midi::Message& msg, int index) {
+    void sendMessage(const midi::Message& msg, int index) override {
         if(index < 0 || index >= NUM_PORTS) {
             return;
         }

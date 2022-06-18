@@ -104,24 +104,6 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler, MidiRepeaterSender {
             // handle MIDI input
             while(cvMidiIn->getInputMessage(&msg)) {
                 repeatHist.handleMessage(msg);
-/*
-                if(msg.getSize() < 3) continue;
-                if((msg.bytes[0] & 0xf0) != MIDI_CONTROL_CHANGE) {
-                    continue;
-                }
-                int note = (int)params[CC_BASE].getValue() + msg.bytes[1] +
-                    ((int)params[OCT_OFFSET].getValue() * 12);
-                PDEBUG("note: %d - offset: %d", note, (int)params[OCT_OFFSET].getValue());
-                if(note < 0 || note > 127) continue;
-                int vel = (int)((float)msg.bytes[2] * params[VEL_POT].getValue());
-                msg.setSize(3);
-                msg.bytes[0] = MIDI_NOTE_ON;
-                msg.bytes[1] = note;
-                msg.bytes[2] = vel;
-                cvMidiOut->sendOutputMessage(msg);
-                lastNote = note;
-                lastNoteTimeout.timeout = LAST_NOTE_TIMEOUT;
-*/
             }
             lastNoteTimeout.update();
 
@@ -179,7 +161,7 @@ struct MIDI_CC_Note : Module, KilpatrickLabelHandler, MidiRepeaterSender {
 
     // send an output message to a port - callback from repeater
     // returns -1 on error
-    void sendMessage(const midi::Message& msg, int index) {
+    void sendMessage(const midi::Message& msg, int index) override {
         midi::Message sendMsg;
         int note = (int)params[CC_BASE].getValue() + msg.bytes[1] +
             ((int)params[OCT_OFFSET].getValue() * 12);
