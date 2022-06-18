@@ -27,7 +27,6 @@ void MidiClock::registerHandler(MidiClockHandler *handler) {
 // send message to the MIDI clock (from a port)
 // this may cause callbacks to be called
 void MidiClock::sendMessage(const midi::Message& msg) {
-    int temp;
     if(msg.getSize() != 1) {
         return;
     }
