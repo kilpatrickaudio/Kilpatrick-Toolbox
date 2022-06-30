@@ -51,6 +51,6 @@ extern NVGcolor MIDI_LABEL_FG_COLOR;
 extern NVGcolor MIDI_LABEL_BG_COLOR;
 #define PITCH_GATE_SMOOTHING (1.0 / 10000.0f);  // smothing for pitch and gate
 #define CC_CV_SMOOTHING (1.0 / 100.0f)  // smoothing for CC to CV
-#define RT_TASK_RATE 4000  // MIDI handler rate
+#define RT_TASK_RATE 1000  // RT task rate (base rate)
 
 #define PLATFORM_VCV

@@ -58,8 +58,7 @@ struct Quad_Encoder : Module {
 		LIGHTS_LEN
 	};
     static constexpr int AUDIO_BUFLEN = 64;
-//    static constexpr int RT_TASK_RATE = 100;
-    static constexpr int RT_TASK_DIVIDER = 40;
+    static constexpr int RT_TASK_DIVIDER = 10;
     dsp::ClockDivider taskTimer;
     static constexpr float AUDIO_IN_GAIN = 0.1f;
     static constexpr float AUDIO_OUT_GAIN = 10.0f;  // save mixing headroom

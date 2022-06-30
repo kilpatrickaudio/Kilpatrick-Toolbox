@@ -109,9 +109,9 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     static constexpr int OUTPUT_DIV_MAX = 24;
     static constexpr int OUT_PULSE_LEN = 16;
     static constexpr int LED_PULSE_LEN = 200;
-    static constexpr int AUTOSTART_TIMEOUT = 800;
-    static constexpr int ANALOG_CLOCK_TIMEOUT = 8000;
-    static constexpr int RUN_IN_IGNORE_TIMEOUT = 200;
+    static constexpr int AUTOSTART_TIMEOUT = 200;  // 200ms
+    static constexpr int ANALOG_CLOCK_TIMEOUT = 2000;  // 2s
+    static constexpr int RUN_IN_IGNORE_TIMEOUT = 200;  // 200ms
     dsp::ClockDivider taskTimer;
     CVMidi *cvMidiIn;
     CVMidi *cvMidiOut;

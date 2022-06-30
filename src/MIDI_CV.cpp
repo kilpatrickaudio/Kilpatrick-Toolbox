@@ -77,7 +77,7 @@ struct MIDI_CV : Module {
     };
     int learnMode;
     int learnTimeout;
-    #define LEARN_TIMEOUT (RT_TASK_RATE * 4)  // 2 seconds
+    #define LEARN_TIMEOUT (RT_TASK_RATE * 2)  // 2 seconds
     enum {
         CV_MODE_CC,
         CV_MODE_POLY,
