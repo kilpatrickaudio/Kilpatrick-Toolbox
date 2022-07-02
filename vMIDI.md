@@ -8,9 +8,9 @@ Other developers are encouraged to use **vMIDI&trade;** in their own plugins for
 
 ## Protocol Specifications
 
-Messages are sent over the CV signal interface within VCV Rack by encoding a 3-byte MIDI message as a '''float''',
-sending it over the virtual cable, and then converting it back to an '''int''' representation on the receiving side.
-To ensure proper encoding of the message we assume that a normal IEEE 32 bit '''float''' can represent whole numbers
+Messages are sent over the CV signal interface within VCV Rack by encoding a 3-byte MIDI message as a ```float```,
+sending it over the virtual cable, and then converting it back to an ```int``` representation on the receiving side.
+To ensure proper encoding of the message we assume that a normal IEEE 32 bit ```float``` can represent whole numbers
 within the range of -16777215 to 0 which is true for 32 bit floats. By default only
 monophonic cables are used to send a single MIDI port over a cable. A single three byte message is sent in each sample
 period. The format for the int message word for each message is as follows:
@@ -24,8 +24,8 @@ period. The format for the int message word for each message is as follows:
 ### Converting to/from a CV Signal</h2>
 
 The best way to use **vMIDI&trade;** is to make a small helper library to encode and decode messages. The
-internal VCV Rack MIDI structure '''midi::Message''' can be used for MIDI messages going in and out of the library.
-To send a message, encode an '''int''' with the 24 bit format shown above and cast it to a '''float''' while
+internal VCV Rack MIDI structure ```midi::Message``` can be used for MIDI messages going in and out of the library.
+To send a message, encode an ```int``` with the 24 bit format shown above and cast it to a ```float``` while
 also changing the sign so that the number is negative:
 
 <pre>
@@ -42,8 +42,8 @@ the value to 0.0f when no message is present to prevent the parser code from run
 messages from being received without a cable connected without having to check the connection status.
 
 When receiving the data, check to see that the value is <0.0f which indicates that a valid message is available. Convert the
-float to an int by switching the sign and using '''roundf()''' and then inspect / unpack the bits in the returned
-'''int'''. All three bytes can then be parsed.
+float to an int by switching the sign and using ```roundf()``` and then inspect / unpack the bits in the returned
+```int```. All three bytes can then be parsed.
 
 <pre>
     int msgWord;
