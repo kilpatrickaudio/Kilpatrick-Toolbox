@@ -998,6 +998,139 @@ struct AllpassPhaseShifter {
     }
 };
 
+// fast sine wave generator based on Z-transform
+// https://www.musicdsp.org/en/latest/Synthesis/9-fast-sine-wave-calculation.html
+// not very high-quality frequency or phase coherence
+struct FastSineGen {
+    float y0, y1, y2, b1;
+
+    // constructor
+    FastSineGen() {
+        setFreq(1000.0f, 48000.0f);
+    }
+
+    // set the frequency
+    void setFreq(float freq, float fs) {
+        float w = freq * 2.0f * M_PI / fs;
+        b1 = 2.0f * cosf(w);
+        y1 = sinf(-w);
+        y2 = sinf(-2.0f * w);
+    }
+
+    // get the next sample
+    float process(void) {
+        y0 = b1 * y1 - y2;
+        y2 = y1;
+        y1 = y0;
+        return y0;
+    }
+};
+
+// NCO-style generator with precise frequency steps
+// high-quality drift-free sines and ramps
+struct NCOGen {
+    static constexpr uint32_t MAXVAL = 2147483647;
+    uint32_t pa;
+    uint32_t freq;
+
+    // constructor
+    NCOGen() {
+        pa = 0;
+        setFreq(1000.0f, 48000.0f);
+    }
+
+    // set the frequency
+    void setFreq(float freq, float fs) {
+        this->freq = (int32_t)((freq / fs) * (float)MAXVAL);
+    }
+
+    // get the next ramp sample and increment
+    // output range is 0.0f to 1.0f
+    float processRamp(void) {
+        pa += freq;
+        return (float)(pa & 0x7fffffff) / (float)MAXVAL;
+    }
+
+    // get the next sample as a sine and increment
+    // output range is -1.0f to 1.0f
+    float processSine(void) {
+        return sinf(processRamp() * M_PI * 2.0f);
+    }
+};
+
+// Goertzel tone detection
+struct GoertzelToneDetect {
+    int n;
+    float coeff;
+    float sine, cosine;
+    float q1, q2;
+    int sampCount;
+    int detect;
+    float detectLevel;  // normalized detect level
+    float thresh;  // thresh level from 0.0 to 1.0
+
+    // constructor
+    GoertzelToneDetect() {
+        setFreq(1000.0f, 0.025f, 48000.0f);
+        setThresh(0.25f);
+    }
+
+    // set frequency
+    void setFreq(float freq, float blockTime, float fs) {
+        n = (int)(fs * blockTime);
+        int k = (int)(0.5f + (((float)n * freq) / fs));
+        float omega = (2.0f * M_PI * k) / (float)n;
+        sine = sinf(omega);
+        cosine = cosf(omega);
+        coeff = 2.0f * cosine;
+        q1 = 0.0f;
+        q2 = 0.0f;
+        sampCount = 0;
+        detect = 0;
+    }
+
+    // set the detection threshold
+    void setThresh(float thresh) {
+        this->thresh = thresh;
+    }
+
+    // process a sample and return 1 if tone is detected
+    int process(float sample) {
+        float q0;
+        q0 = coeff * q1 - q2 + sample;
+        q2 = q1;
+        q1 = q0;
+
+        sampCount ++;
+        if(sampCount == n) {
+            float real = (q1 - q2 * cosine);
+            float imag = q2 * sine;
+            detectLevel = (real * real + imag * imag) / ((float)n * (float)n);
+            detectLevel = clampPos(detectLevel * 4.0);  // XXX amplitude fix?
+            if(detectLevel > thresh) {
+                detect = 1;
+            }
+            else {
+                detect = 0;
+            }
+            q1 = 0.0f;
+            q2 = 0.0f;
+            sampCount = 0;
+        }
+        return detect;
+    }
+
+    // get detection state
+    int getDetect(void) {
+        return detect;
+    }
+
+    // get the detection magnitude
+    float getDetectLevel(void) {
+        return detectLevel;
+    }
+};
+
 };  // namespace dsp2
 
 #endif

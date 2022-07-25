@@ -1,7 +1,7 @@
 # Kilpatrick-Toolbox
 
 This repo contains Kilpatrick Toolbox Modules for
-[VCV Rack Virtual Eurorack DAW](https://vcvrack.com). Kilpatrick Audio has been
+[VCV Rack](https://library.vcvrack.com/?query=toolbox&brand=Kilpatrick+Audio&tag=&license=). Kilpatrick Audio has been
 designing and building music and audio electronics since 2008. Please visit the
 links below for information about Kilpatrick Audio and its founder Andrew Kilpatrick.
 

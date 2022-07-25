@@ -90,7 +90,7 @@ std::string freqToStr(float freq) {
 
 // possibly truncate the prefix of a string to make it maxlen
 std::string truncateStrPrefix(std::string str, int maxlen) {
-    if(str.length() > maxlen) {
+    if(str.length() > (unsigned int)maxlen) {
         return str.substr(str.length() - maxlen, -1);
     }
     return str;

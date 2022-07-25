@@ -89,6 +89,29 @@ inline bool instanceof(const T*) {
    return is_base_of<Base, T>::value;
 }
 
+// create a param with ParamWidget arg passed in
+template <class TParamWidget>
+TParamWidget* createArgParam(math::Vec pos, TParamWidget *o,
+        engine::Module* module, int paramId) {
+	o->box.pos = pos;
+	o->app::ParamWidget::module = module;
+	o->app::ParamWidget::paramId = paramId;
+	o->initParamQuantity();
+	return o;
+}
+
+// create a param with ParamWidget arg passed in
+template <class TParamWidget>
+TParamWidget* createArgParamCentered(math::Vec pos, TParamWidget *o,
+        engine::Module* module, int paramId) {
+    o->box.pos = pos;
+	o->box.pos = o->box.pos.minus(o->box.size.div(2));
+    o->app::ParamWidget::module = module;
+	o->app::ParamWidget::paramId = paramId;
+    o->initParamQuantity();
+	return o;
+}
+
 };
 
 #endif
