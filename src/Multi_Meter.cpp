@@ -26,32 +26,7 @@
 #include "utils/MenuHelper.h"
 #include "utils/PUtils.h"
 
-// stereo meter display source
-struct Multi_MeterDisplaySource {
-    // get the peak meter levels
-    virtual void getPeakDbLevels(int chan, float *level, float *peak) { }
-
-    // handle hover scroll
-    virtual void onHoverScroll(int id, const event::HoverScroll& e) { }
-
-    // get the reference level for a meter
-    virtual float getRefLevel(int chan) { return 0.0f; }
-
-    // set the reference level for a meter
-    virtual void setRefLevel(int chan, float level) { }
-
-    // get the MeterMode
-    virtual int getMeterMode(void) { return 0; }
-
-    // full a buffer of points from the XY ringbuffer up to maxSize
-    // returns the number of points
-    virtual int getXyPoints(Vec *buf, int maxSize) { return 0; }
-
-    // clear the XY point buf
-    virtual void clearXyPoints(void) { }
-};
-
-struct Multi_Meter : Module, Multi_MeterDisplaySource {
+struct Multi_Meter : Module {
 	enum ParamId {
 		MODE_SW,
 		CHAN_SW,
@@ -158,7 +133,7 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
     // callbacks
     //
     // get the peak meter levels
-    void getPeakDbLevels(int chan, float *level, float *peak) override {
+    void getPeakDbLevels(int chan, float *level, float *peak) {
         if(chan < 0 || chan >= MAX_CHANNELS) {
             return;
         }
@@ -167,7 +142,7 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
     }
 
     // get the reference level for a meter
-    float getRefLevel(int chan) override {
+    float getRefLevel(int chan) {
         if(chan < 0 || chan >= MAX_CHANNELS) {
             return 0.0f;
         }
@@ -175,7 +150,7 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
     }
 
     // set the reference level for a meter
-    void setRefLevel(int chan, float level) override {
+    void setRefLevel(int chan, float level) {
         if(chan < 0 || chan >= MAX_CHANNELS) {
             return;
         }
@@ -183,7 +158,7 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
     }
 
     // get the MeterMode
-    int getMeterMode(void) override {
+    int getMeterMode(void) {
         switch((int)params[MODE_SW].getValue()) {
             case ModeSwMode::MODE_XY:
                 return MeterMode::METER_XY;
@@ -203,7 +178,7 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
 
     // full a buffer of points from the XY ringbuffer up to maxSize
     // returns the number of points
-    int getXyPoints(Vec *buf, int maxSize) override {
+    int getXyPoints(Vec *buf, int maxSize) {
         int len = xyBuf.size();
         if(len > maxSize) len = maxSize;
         if(len > 0) {
@@ -213,15 +188,14 @@ struct Multi_Meter : Module, Multi_MeterDisplaySource {
     }
 
     // clear the XY point buf
-    void clearXyPoints(void) override {
+    void clearXyPoints(void) {
         xyBuf.clear();
     }
 };
 
 // levelmeter / scope display
 struct Multi_MeterDisplay : widget::TransparentWidget {
-    int id;
-    Multi_MeterDisplaySource *source;
+    Multi_Meter *source;
     float rad;
     NVGcolor bgColor;
     NVGcolor scopeGridColor;
@@ -235,9 +209,8 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
     Vec xyOld;
 
     // create a display
-    Multi_MeterDisplay(int id, math::Vec pos, math::Vec size) {
-        this->id = id;
-        this->source = NULL;
+    Multi_MeterDisplay(math::Vec pos, math::Vec size, Multi_Meter *source) {
+        this->source = source;
         rad = mm2px(1);
         box.pos = pos.minus(size.div(2));
         box.size = size;
@@ -262,6 +235,8 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
     void draw(const DrawArgs& args) override {
         float level[16], peak[16], ref[16];
         int reflowMeters = 0;
+
+        // preview doesn't have a valid source
         if(source == NULL) {
             meterMode = Multi_Meter::METER_16CH;
             reflowMeters = 1;
@@ -380,6 +355,7 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
         else if(e.scrollDelta.y > 0.0f) {
             change = 1.0f;
         }
+        // XXX implement ref level adjust
 /*
         // select meter based on mouse hover pos
         if(e.pos.x > box.size.x / 2) {
@@ -417,8 +393,7 @@ struct Multi_MeterWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-        Multi_MeterDisplay *disp = new Multi_MeterDisplay(0, mm2px(Vec(55.88, 55.5)), mm2px(Vec(92.0, 84.0)));
-        disp->source = module;
+        Multi_MeterDisplay *disp = new Multi_MeterDisplay(mm2px(Vec(55.88, 55.5)), mm2px(Vec(92.0, 84.0)), module);
         addChild(disp);
 
 		addParam(createParamCentered<KilpatrickToggle2P>(mm2px(Vec(64.88, 108.5)), module, Multi_Meter::MODE_SW));

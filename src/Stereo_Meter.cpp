@@ -25,22 +25,7 @@
 #include "utils/KAComponents.h"
 #include "utils/PUtils.h"
 
-// stereo meter display source
-struct Stereo_MeterDisplaySource {
-    // get the peak meter levels
-    virtual void getPeakDbLevels(int chan, float *level, float *peak) { }
-
-    // handle hover scroll
-    virtual void onHoverScroll(int id, const event::HoverScroll& e) { }
-
-    // get the reference level for a meter
-    virtual float getRefLevel(int chan) { return 0.0f; }
-
-    // set the reference level for a meter
-    virtual void setRefLevel(int chan, float level) { }
-};
-
-struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
+struct Stereo_Meter : Module {
 	enum ParamIds {
         REF_LEVEL_L,
         REF_LEVEL_R,
@@ -94,7 +79,7 @@ struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
     // callbacks
     //
     // get the peak meter levels
-    void getPeakDbLevels(int chan, float *level, float *peak) override {
+    void getPeakDbLevels(int chan, float *level, float *peak) {
         if(chan) {
             *level = meterProcR.getDbLevel();
             *peak = meterProcR.getPeakDbLevel();
@@ -105,7 +90,7 @@ struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
     }
 
     // get the reference level for a meter
-    float getRefLevel(int chan) override {
+    float getRefLevel(int chan) {
         if(chan) {
             return params[REF_LEVEL_R].getValue();
         }
@@ -113,7 +98,7 @@ struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
     }
 
     // set the reference level for a meter
-    void setRefLevel(int chan, float level) override {
+    void setRefLevel(int chan, float level) {
         if(chan) {
             params[REF_LEVEL_R].setValue(level);
         }
@@ -125,17 +110,15 @@ struct Stereo_Meter : Module, Stereo_MeterDisplaySource {
 
 // levelmeter display
 struct Stereo_MeterDisplay : widget::TransparentWidget {
-    int id;
-    Stereo_MeterDisplaySource *source;
+    Stereo_Meter *source;
     float rad;
     NVGcolor bgColor;
     KALevelmeter meterL;
     KALevelmeter meterR;
 
     // create a display
-    Stereo_MeterDisplay(int id, math::Vec pos, math::Vec size) {
-        this->id = id;
-        this->source = NULL;
+    Stereo_MeterDisplay(math::Vec pos, math::Vec size, Stereo_Meter *source) {
+        this->source = source;
         rad = mm2px(1);
         box.pos = pos.minus(size.div(2));
         box.size = size;
@@ -165,6 +148,8 @@ struct Stereo_MeterDisplay : widget::TransparentWidget {
     // draw
     void draw(const DrawArgs& args) override {
         float levelL, peakL, levelR, peakR, refL, refR;
+
+        // preview doesn't have a valid source
         if(source == NULL) {
             levelL = -10.0f;
             levelR = -10.0f;
@@ -225,8 +210,7 @@ struct Stereo_MeterWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, 0)));
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-        Stereo_MeterDisplay *disp = new Stereo_MeterDisplay(0, mm2px(Vec(15.24, 48.5)), mm2px(Vec(26.0, 68.0)));
-        disp->source = module;
+        Stereo_MeterDisplay *disp = new Stereo_MeterDisplay(mm2px(Vec(15.24, 48.5)), mm2px(Vec(26.0, 68.0)), module);
         addChild(disp);
 
 		addInput(createInputCentered<PJ301MPort>(mm2px(Vec(15.24, 94.5)), module, Stereo_Meter::IN_L));

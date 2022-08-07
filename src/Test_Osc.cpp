@@ -25,27 +25,6 @@
 #include "utils/KAComponents.h"
 #include "utils/PUtils.h"
 
-// test osc display source
-struct TestOscDisplaySource {
-    // get the reference level in dB
-    virtual float dispGetRefLevel(void) { return 0.0f; }
-
-    // get the absolute level in dB
-    virtual float dispGetAbsLevel(void) { return 0.0f; }
-
-    // get the frequency in Hz
-    virtual float dispGetFrequency(void) { return 0.0f; }
-
-    // get the sweep time in s
-    virtual float dispGetSweepTime(void) { return 0.0f; }
-
-    // get the sweep progress - 0.0 to 1.0 = 0-100%
-    virtual float dispGetSweepProgress(void) { return 0.0f; }
-
-    // handle scroll on the label
-    virtual void dispOnHoverScroll(int id, const event::HoverScroll& e) {}
-};
-
 float Test_Osc_freqs[] = {
     20.0, 25.0, 31.5, 40.0, 50.0, 63.0, 80.0, 100.0,
     125.0, 160.0, 200.0, 250.0, 315.0, 400.0, 500.0, 630.0,
@@ -53,7 +32,7 @@ float Test_Osc_freqs[] = {
     5000.0, 6300.0, 8000.0, 10000.0, 12500.0, 16000.0, 20000.0
 };
 
-struct Test_Osc : Module, TestOscDisplaySource {
+struct Test_Osc : Module {
 	enum ParamIds {
 		LEVEL_ENC,
         FREQ_ENC,
@@ -380,21 +359,18 @@ struct Test_Osc : Module, TestOscDisplaySource {
         sweeping = 0;
     }
 
-    //
-    // callbacks
-    //
     // get the reference level factor
-    float dispGetRefLevel(void) override {
+    float dispGetRefLevel(void) {
         return params[ABS_LEVEL].getValue() * params[REF_LEVEL].getValue();
     }
 
     // get the absolute level factor
-    float dispGetAbsLevel(void) override {
+    float dispGetAbsLevel(void) {
         return params[ABS_LEVEL].getValue();
     }
 
     // get the frequency in Hz
-    float dispGetFrequency(void) override {
+    float dispGetFrequency(void) {
         if(sweeping) {
             return sweepFreq;
         }
@@ -402,17 +378,17 @@ struct Test_Osc : Module, TestOscDisplaySource {
     }
 
     // get the sweep time in s
-    float dispGetSweepTime(void) override {
+    float dispGetSweepTime(void) {
         return params[SPEED].getValue();
     }
 
     // get the sweep progress - 0.0 to 1.0 = 0-100%
-    float dispGetSweepProgress(void) override {
+    float dispGetSweepProgress(void) {
         return sweepPos;
     }
 
     // handle scroll on the label
-    void dispOnHoverScroll(int id, const event::HoverScroll& e) override {
+    void dispOnHoverScroll(const event::HoverScroll& e) {
         float change = 0.1f;
         if(e.scrollDelta.y < 0.0f) {
             change *= -1.0f;
@@ -423,8 +399,7 @@ struct Test_Osc : Module, TestOscDisplaySource {
 
 // test osc display
 struct TestOscDisplay : widget::TransparentWidget {
-    int id;
-    TestOscDisplaySource *source;
+    Test_Osc *source;
     float rad;
     NVGcolor textColor;
     NVGcolor bgColor;
@@ -433,9 +408,8 @@ struct TestOscDisplay : widget::TransparentWidget {
     float fontSizeLarge;
 
     // create a display
-    TestOscDisplay(int id, math::Vec pos, math::Vec size) {
-        this->id = id;
-        this->source = NULL;
+    TestOscDisplay(math::Vec pos, math::Vec size, Test_Osc *source) {
+        this->source = source;
         rad = mm2px(1.0);
         box.pos = pos.minus(size.div(2));
         box.size = size;
@@ -449,6 +423,8 @@ struct TestOscDisplay : widget::TransparentWidget {
     // draw
     void draw(const DrawArgs& args) override {
         float abs, ref, sweepTime, sweepProgress, freq;
+
+        // preview doesn't have a valid source
         if(source == NULL) {
             abs = 1.0f;
             ref = 1.0f;
@@ -501,12 +477,8 @@ struct TestOscDisplay : widget::TransparentWidget {
     }
 
     void onHoverScroll(const event::HoverScroll& e) override {
-        if(source) {
-            source->dispOnHoverScroll(id, e);
-            e.consume(NULL);
-            return;
-        }
-        TransparentWidget::onHoverScroll(e);
+        source->dispOnHoverScroll(e);
+        e.consume(NULL);
     }
 };
 
@@ -520,8 +492,7 @@ struct Test_OscWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 //		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-        TestOscDisplay *disp = new TestOscDisplay(0, mm2px(Vec(20.32, 20.5)), mm2px(Vec(32.0, 20.0)));
-        disp->source = module;
+        TestOscDisplay *disp = new TestOscDisplay(mm2px(Vec(20.32, 20.5)), mm2px(Vec(32.0, 20.0)), module);
         addChild(disp);
 
 		addParam(createParamCentered<KilpatrickKnobBlackRed>(mm2px(Vec(12.32, 43.5)), module, Test_Osc::LEVEL_ENC));

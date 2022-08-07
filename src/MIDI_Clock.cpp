@@ -30,46 +30,7 @@
 #include "utils/VUtils.h"
 #include "MidiClockPll/MidiClockPll.h"
 
-// MIDI clock display source
-struct MidiClockDisplaySource {
-    // get the tempo in BPM
-    virtual float midiClockDisplayGetTempo(void) { return 100.0f; }
-
-    // get whether internal clock source is used
-    virtual int midiClockDisplayIsSourceInternal(void) { return 1; }
-
-    // get whether the source is synced
-    virtual int midiClockDisplayIsSourceSynced(void) { return 1; }
-
-    // get whether clock is running
-    virtual int midiClockDisplayIsRunning(void) { return 0; }
-
-    // get the output divider ratio - 1 = same as upsample PPQ
-    virtual int midiClockDisplayGetOutputDiv(void) { return 1; }
-
-    // get whether autostart mode is enabled
-    virtual int midiClockDisplayIsAutostartEnabled(void) { return 0; }
-
-    // tap the tempo
-    virtual void midiClockTapTempo(void) { }
-
-    // adjust the tempo
-    virtual void midiClockAdjustTempo(float change) { }
-
-    // adjust the output divider
-    virtual void midiClockAdjustOutputDiv(float change) { }
-
-    // toggle autostart
-    virtual void midiClockToggleAutostart(void) { }
-
-    // toggle run state
-    virtual void midiClockToggleRunState(void) { }
-
-    // toggle int/ext source
-    virtual void midiClockToggleSource(void) { }
-};
-
-struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
+struct MIDI_Clock : Module, MidiClockPllHandler {
 	enum ParamId {
 		RESET_SW,
 		RUNSTOP_SW,
@@ -436,12 +397,12 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     // MIDI clock display source
     //
     // get the tempo in BPM
-    float midiClockDisplayGetTempo(void) override {
+    float midiClockDisplayGetTempo(void) {
         return midiClock.getTempo();
     }
 
     // get whether internal clock source is used
-    int midiClockDisplayIsSourceInternal(void) override {
+    int midiClockDisplayIsSourceInternal(void) {
         if(midiClock.getSource() == MidiClockPll::SOURCE_INTERNAL) {
             return 1;
         }
@@ -449,45 +410,45 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     }
 
     // get whether the source is synced
-    int midiClockDisplayIsSourceSynced(void) override {
+    int midiClockDisplayIsSourceSynced(void) {
         return midiClock.isExtSynced();
     }
 
     // get whether clock is running
-    int midiClockDisplayIsRunning(void) override {
+    int midiClockDisplayIsRunning(void) {
         return midiClock.getRunState();
     }
 
     // get the output divider ratio - 1 = same as upsample PPQ
-    int midiClockDisplayGetOutputDiv(void) override {
+    int midiClockDisplayGetOutputDiv(void) {
         return (int)params[OUTPUT_DIV].getValue();
     }
 
     // get whether autostart mode is enabled
-    int midiClockDisplayIsAutostartEnabled(void) override {
+    int midiClockDisplayIsAutostartEnabled(void) {
         return (int)params[AUTOSTART_EN].getValue();
     }
 
     // tap the tempo
-    void midiClockTapTempo(void) override {
+    void midiClockTapTempo(void) {
         midiClock.tapTempo();
     }
 
     // adjust the tempo
-    void midiClockAdjustTempo(float change) override {
+    void midiClockAdjustTempo(float change) {
         midiClock.setTempo(midiClock.getTempo() + change);
         updateTempoParam();
     }
 
     // adjust the output divider
-    void midiClockAdjustOutputDiv(float change) override {
+    void midiClockAdjustOutputDiv(float change) {
         params[OUTPUT_DIV].setValue(
             putils::clamp((int)(params[OUTPUT_DIV].getValue() + change),
             OUTPUT_DIV_MIN, OUTPUT_DIV_MAX));
     }
 
     // toggle autostart
-    void midiClockToggleAutostart(void) override {
+    void midiClockToggleAutostart(void) {
         if((int)params[AUTOSTART_EN].getValue()) {
             params[AUTOSTART_EN].setValue(0.0f);
         }
@@ -497,7 +458,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     }
 
     // toggle run state
-    void midiClockToggleRunState(void) override {
+    void midiClockToggleRunState(void) {
         if(midiClock.getRunState()) {
             midiClock.stopRequest();
         }
@@ -507,7 +468,7 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
     }
 
     // toggle int/ext source
-    void midiClockToggleSource(void) override {
+    void midiClockToggleSource(void) {
         if(midiClock.getSource() == MidiClockPll::SOURCE_INTERNAL) {
             midiClock.setSource(MidiClockPll::SOURCE_EXTERNAL);
         }
@@ -518,8 +479,8 @@ struct MIDI_Clock : Module, MidiClockPllHandler, MidiClockDisplaySource {
 };
 
 // MIDI clock display
-struct MidiClockDisplay : widget::TransparentWidget {
-    MidiClockDisplaySource *source;
+struct MIDI_ClockDisplay : widget::TransparentWidget {
+    MIDI_Clock *source;
     float rad;
     NVGcolor textColor;
     NVGcolor runColor;
@@ -541,8 +502,8 @@ struct MidiClockDisplay : widget::TransparentWidget {
     };
 
     // create a display
-    MidiClockDisplay(math::Vec pos, math::Vec size) {
-        this->source = NULL;
+    MIDI_ClockDisplay(math::Vec pos, math::Vec size, MIDI_Clock *source) {
+        this->source = source;
         rad = mm2px(1.0);
         box.pos = pos.minus(size.div(2));
         box.size = size;
@@ -573,6 +534,8 @@ struct MidiClockDisplay : widget::TransparentWidget {
     void draw(const DrawArgs& args) override {
         float tempo;
         int internal, synced, div, autostart, running;
+
+        // preview doesn't have a valid source
         if(source == NULL) {
             tempo = 120.0f;
             internal = 1;
@@ -748,8 +711,7 @@ struct MIDI_ClockWidget : ModuleWidget {
 		addChild(createWidget<ScrewSilver>(Vec(RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 		addChild(createWidget<ScrewSilver>(Vec(box.size.x - 2 * RACK_GRID_WIDTH, RACK_GRID_HEIGHT - RACK_GRID_WIDTH)));
 
-        MidiClockDisplay *disp = new MidiClockDisplay(mm2px(Vec(20.32, 22.446)), mm2px(Vec(32.0, 16.0)));
-        disp->source = module;
+        MIDI_ClockDisplay *disp = new MIDI_ClockDisplay(mm2px(Vec(20.32, 22.446)), mm2px(Vec(32.0, 16.0)), module);
         addChild(disp);
 
         addParam(createParamCentered<KilpatrickD6RWhiteButton>(mm2px(Vec(13.32, 40.446)), module, MIDI_Clock::RESET_SW));
