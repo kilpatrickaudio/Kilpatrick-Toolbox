@@ -793,6 +793,11 @@ struct KALevelmeter {
         refLevel = level;
     }
 
+    // get the bounds of the meter
+    math::Rect getBounds(void) {
+        return math::Rect(pos, size);
+    }
+
     // draw - the background must be cleared
     void draw(const widget::Widget::DrawArgs& args) {
         float tempf;

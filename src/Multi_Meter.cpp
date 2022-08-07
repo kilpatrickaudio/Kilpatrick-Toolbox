@@ -81,6 +81,7 @@ struct Multi_Meter : Module {
     };
     dsp2::Levelmeter meterProc[MAX_CHANNELS];
     dsp::RingBuffer<Vec, XY_BUFLEN> xyBuf;
+    int wasReset = 0;
 
     // constructor
 	Multi_Meter() {
@@ -127,6 +128,7 @@ struct Multi_Meter : Module {
 
     // module initialize
     void onReset(void) override {
+        wasReset = 1;  // let GUI check and reset meter refs
     }
 
     //
@@ -257,6 +259,14 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
                 source->getPeakDbLevels(i, &level[i], &peak[i]);
                 ref[i] = source->getRefLevel(i);
             }
+
+            // check if we were reset
+            if(source->wasReset) {
+                for(int i = 0; i < Multi_Meter::MAX_CHANNELS; i ++) {
+                    meters[i].setRefLevel(0.0f);
+                }
+                source->wasReset = 0;
+            }
         }
 
         // background
@@ -355,18 +365,12 @@ struct Multi_MeterDisplay : widget::TransparentWidget {
         else if(e.scrollDelta.y > 0.0f) {
             change = 1.0f;
         }
-        // XXX implement ref level adjust
-/*
-        // select meter based on mouse hover pos
-        if(e.pos.x > box.size.x / 2) {
-            source->setRefLevel(1, source->getRefLevel(1) + change);
-        }
-        else {
-            source->setRefLevel(0, source->getRefLevel(0) + change);
+        for(int i = 0; i < getNumMeters(); i ++) {
+            if(meters[i].getBounds().contains(e.pos)) {
+                source->setRefLevel(i, source->getRefLevel(i) + change);
+            }
         }
         e.consume(NULL);
-*/
-        TransparentWidget::onHoverScroll(e);
     }
 
     // convert the meter mode into the number of meters
