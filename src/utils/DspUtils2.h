@@ -12,6 +12,7 @@
 
 #include <math.h>
 #include <string>
+#include <vector>
 #include "PLog.h"
 
 // portable PC-centric C++ here - no VCV functions
@@ -187,24 +188,14 @@ struct LevelSense {
     float z1 = 0.0f;
 
     // set the attack speed in seconds
-    void setAttack(float speed, float fs) {
-        a0Attack = 1.0 - expf(-2.0 * M_PI * (1.0 / speed / fs));
-    }
+    void setAttack(float speed, float fs);
 
     // set the release speed in seconds
-    void setRelease(float speed, float fs) {
-        a0Release = 1.0 - expf(-2.0 * M_PI * (1.0 / speed / fs));
-    }
+    void setRelease(float speed, float fs);
 
     // run 1-pole lowpass
-    float process(float in) {
-        if(in > z1) {
-            return z1 = ((in - z1) * a0Attack) + z1;
-        }
-        return z1 = ((in - z1) * a0Release) + z1;
-    }
+    float process(float in);
 };
-
 
 // single pole filter
 struct Filter1Pole {
@@ -212,25 +203,16 @@ struct Filter1Pole {
     float z1 = 0.0f;
 
     // set the cutoff frequency of a 1 pole filter
-    void setCutoff(float freq, float fs) {
-        a0 = 1.0 - expf(-2.0 * M_PI * (freq / fs));
-    }
+    void setCutoff(float freq, float fs);
 
     // run 1-pole lowpass
-    float lowpass(float in) {
-        return z1 = ((in - z1) * a0) + z1;
-    }
+    float lowpass(float in);
 
     // run 1-pole highpass
-    float highpass(float in) {
-        z1 = ((in - z1) * a0) + z1;
-        return in - z1;
-    }
+    float highpass(float in);
 
     // get the most recently computied out
-    float getOutput(void) {
-        return z1;
-    }
+    float getOutput(void);
 };
 
 // two pole filter
@@ -246,7 +228,6 @@ struct Filter2Pole {
     float freq = 0.0f;
     float gain = 0.0f;
     float q = 0.0f;
-
     // filter type
     enum {
         TYPE_LPF,
@@ -264,145 +245,20 @@ struct Filter2Pole {
     // q: Q factor
     // gain: gain factor
     // fs: audio samplerate in Hz
-    void setCutoff(int type, float freq, float q, float gain, float fs) {
-        float norm;
-//        float V = pow(10, fabs(gain) / 20.0);
-        float V = gain;
-        float K = tan(M_PI * freq / fs);
-        this->freq = freq;
-        this->gain = gain;
-        this->q = q;
-        switch(type) {
-            case TYPE_LPF:
-                norm = 1.0 / (1.0 + K / q + K * K);
-                a0 = K * K * norm;
-                a1 = 2.0 * a0;
-                a2 = a0;
-                b1 = 2.0 * (K * K - 1.0) * norm;
-                b2 = (1.0 - K / q + K * K) * norm;
-                break;
-            case TYPE_BPF:
-                norm = 1.0 / (1.0 + K / q + K * K);
-                a0 = K / q * norm;
-                a1 = 0.0;
-                a2 = -a0;
-                b1 = 2.0 * (K * K - 1.0) * norm;
-                b2 = (1.0 - K / q + K * K) * norm;
-                break;
-            case TYPE_HPF:
-                norm = 1.0 / (1.0 + K / q + K * K);
-                a0 = 1.0 * norm;
-                a1 = -2.0 * a0;
-                a2 = a0;
-                b1 = 2.0 * (K * K - 1.0) * norm;
-                b2 = (1.0 - K / q + K * K) * norm;
-                break;
-            case TYPE_NOTCH:
-                norm = 1.0 / (1.0 + K / q + K * K);
-                a0 = (1.0 + K * K) * norm;
-                a1 = 2.0 * (K * K - 1.0) * norm;
-                a2 = a0;
-                b1 = a1;
-                b2 = (1.0 - K / q + K * K) * norm;
-                break;
-            case TYPE_PEAK:
-                if(gain >= 0.0) {
-                    norm = 1.0 / (1.0 + 1.0 / q * K + K * K);
-                    a0 = (1.0 + V / q * K + K * K) * norm;
-                    a1 = 2.0 * (K * K - 1.0) * norm;
-                    a2 = (1.0 - V / q * K + K * K) * norm;
-                    b1 = a1;
-                    b2 = (1.0 - 1.0 / q * K + K * K) * norm;
-                }
-                else {
-                    norm = 1.0 / (1.0 + V / q * K + K * K);
-                    a0 = (1.0 + 1.0 / q * K + K * K) * norm;
-                    a1 = 2.0 * (K * K - 1.0) * norm;
-                    a2 = (1.0 - 1.0 / q * K + K * K) * norm;
-                    b1 = a1;
-                    b2 = (1.0 - V / q * K + K * K) * norm;
-                }
-                break;
-            case TYPE_LOWSHELF:
-                if(gain >= 0.0) {
-                    norm = 1.0 / (1.0 + sqrt(2.0) * K + K * K);
-                    a0 = (1.0 + sqrt(2.0 * V) * K + V * K * K) * norm;
-                    a1 = 2.0 * (V * K * K - 1.0) * norm;
-                    a2 = (1.0 - sqrt(2.0 * V) * K + V * K * K) * norm;
-                    b1 = 2.0 * (K * K - 1.0) * norm;
-                    b2 = (1.0 - sqrt(2.0) * K + K * K) * norm;
-                }
-                else {
-                    norm = 1.0 / (1.0 + sqrt(2.0 * V) * K + V * K * K);
-                    a0 = (1.0 + sqrt(2.0) * K + K * K) * norm;
-                    a1 = 2.0 * (K * K - 1.0) * norm;
-                    a2 = (1.0 - sqrt(2.0) * K + K * K) * norm;
-                    b1 = 2.0 * (V * K * K - 1.0) * norm;
-                    b2 = (1.0 - sqrt(2.0 * V) * K + V * K * K) * norm;
-                }
-                break;
-            case TYPE_HIGHSHELF:
-                if(gain >= 0.0) {
-                    norm = 1.0 / (1.0 + sqrt(2.0) * K + K * K);
-                    a0 = (V + sqrt(2.0 * V) * K + K * K) * norm;
-                    a1 = 2.0 * (K * K - V) * norm;
-                    a2 = (V - sqrt(2.0 * V) * K + K * K) * norm;
-                    b1 = 2.0 * (K * K - 1.0) * norm;
-                    b2 = (1.0 - sqrt(2.0) * K + K * K) * norm;
-                }
-                else {
-                    norm = 1.0 / (V + sqrt(2.0 * V) * K + K * K);
-                    a0 = (1.0 + sqrt(2.0) * K + K * K) * norm;
-                    a1 = 2.0 * (K * K - 1.0) * norm;
-                    a2 = (1.0 - sqrt(2.0) * K + K * K) * norm;
-                    b1 = 2.0 * (K * K - V) * norm;
-                    b2 = (V - sqrt(2.0 * V) * K + K * K) * norm;
-                }
-                break;
-        }
-        z1 = 0.0f;
-        z2 = 0.0f;
-    }
+    void setCutoff(int type, float freq, float q,
+        float gain, float fs);
 
     // process a sample
-    float process(float in) {
-        float out = (in * a0) + z1;
-        z1 = (in * a1) + z2 - (out * b1);
-        z2 = (in * a2) - (out * b2);
-        return out;
-    }
+    float process(float in);
 
     // get the frequency as a string
-    std::string getFreqStr(void) {
-        char tempstr[16];
-        if(freq < 100.0f) {
-            sprintf(tempstr, "%2.1fHz", freq);
-        }
-        else if(freq < 1000.0f) {
-            sprintf(tempstr, "%3.0fHz", freq);
-        }
-        else if(freq < 10000.0f) {
-            sprintf(tempstr, "%2.1fkHz", (freq * 0.001f));
-        }
-        else {
-            sprintf(tempstr, "%2.0fkHz", (freq * 0.001f));
-        }
-        return tempstr;
-    }
+    std::string getFreqStr(void);
 
     // get the gain as a string in dB
-    std::string getGainStr(void) {
-        char tempstr[16];
-        sprintf(tempstr, "%2.1fdB", factorToDb(gain));
-        return tempstr;
-    }
+    std::string getGainStr(void);
 
     // get the Q as a string
-    std::string getQStr(void) {
-        char tempstr[16];
-        sprintf(tempstr, "%2.1f", q);
-        return tempstr;
-    }
+    std::string getQStr(void);
 };
 
 // levelmeter with peak hold
@@ -420,84 +276,35 @@ struct Levelmeter {
     static constexpr float PEAK_METER_PEAK_HOLD_TIME = 1.0f;
 
     // constructor
-    Levelmeter() {
-        hist = 0.0f;
-        peak = 0.0f;
-        smoothingSetting = PEAK_METER_SMOOTHING;
-        peakTimeoutSetting = PEAK_METER_PEAK_HOLD_TIME;
-        peakHoldTime = 24000;
-        peakTimeout = 0;
-        useHighpass = 0;  // disable
-        onSampleRateChange();
-    }
+    Levelmeter();
 
     // update the meter
-    void update(float val) {
-        if(useHighpass) {
-            val = hpf.process(val);
-        }
-        val = dsp2::abs(val);
-        if(val > hist) {
-            hist = clamp(val);
-            peak = hist;
-            peakTimeout = peakHoldTime;
-        }
-        else {
-            hist *= smoothing;
-            if(peakTimeout) {
-                peakTimeout --;
-            }
-        }
-    }
+    void update(float val);
 
     // call this if the samplerate changes
-    void onSampleRateChange(void) {
-        hpf.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
-        setSmoothingFreq(smoothingSetting, APP->engine->getSampleRate());
-        setPeakHoldTime(peakTimeoutSetting, APP->engine->getSampleRate());
-    }
+    void onSampleRateChange(void);
 
     // set the smoothing freq cutoff
-    void setSmoothingFreq(float freq, float fs) {
-        smoothingSetting = freq;
-        smoothing = expf(-2.0 * M_PI * (smoothingSetting / fs));
-    }
+    void setSmoothingFreq(float freq, float fs);
 
     // set the peak hold time in seconds
-    void setPeakHoldTime(float time, float fs) {
-        peakTimeoutSetting = time;
-        peakTimeout = (int)roundf(peakTimeoutSetting * fs);
-    }
+    void setPeakHoldTime(float time, float fs);
 
     // get the current level as field size
     // returns a value from 0.0 to 1.0
-    float getLevel(void) {
-        return hist;
-    }
+    float getLevel(void);
 
     // get the level as a dB value
     // returns a value from -96.0 to 0.0
-    float getDbLevel(void) {
-        return clampRange(fieldToDb(hist), -96.0f, 0.0f);
-    }
+    float getDbLevel(void);
 
     // get the current peak level as a field size
     // returns a value from 0.0 to 1.0 or 0.0 if no peak is found
-    float getPeakLevel(void) {
-        if(peakTimeout == 0) {
-            return 0.0;
-        }
-        return peak;
-    }
+    float getPeakLevel(void);
 
     // get the current peak level as a dB value
     // returns a vlaue fro -96.0 to 0.0 or -96.0 if no peak is found
-    float getPeakDbLevel(void) {
-        if(peakTimeout == 0) {
-            return -96.0;
-        }
-        return clampRange(fieldToDb(peak), -96.0f, 0.0f);
-    }
+    float getPeakDbLevel(void);
 };
 
 // a form of levelmeter for LEDs
@@ -505,29 +312,19 @@ struct LevelLed {
     Levelmeter meter;
 
     // constructor
-    LevelLed() {
-        meter.setSmoothingFreq(10.f, APP->engine->getSampleRate());
-    }
+    LevelLed();
 
     // call this if the samplerate changes
-    void onSampleRateChange(void) {
-        meter.onSampleRateChange();
-    }
+    void onSampleRateChange(void);
 
     // update the meter with a cable signal (-10V to +10V) signal
-    void update(float level) {
-        meter.update(level * 0.1);
-    }
+    void update(float level);
 
     // update the meter with a normalized (-1.0V to +1.0v) signal
-    void updateNormalized(float level) {
-        meter.update(level);
-    }
+    void updateNormalized(float level);
 
     // get the brightness
-    float getBrightness(void) {
-        return meter.getLevel();
-    }
+    float getBrightness(void);
 };
 
 // a simple LFO with several modes
@@ -536,45 +333,22 @@ struct SimpleLFO {
     float pa;
 
     // constructor
-    SimpleLFO() {
-        pa = 0.0f;
-        setFrequency(1.0f, 48000.0f);
-    }
+    SimpleLFO();
 
     // process a sample - output: -1.0 to +1.0
-    float process(void) {
-        pa += freq;
-        if(pa > 2.0) pa -= 4.0;
-        if(pa > 0.0) {
-            return pa * (2.0 - pa);
-        }
-        return pa * (2.0 + pa);
-    }
+    float process(void);
 
     // set the frequency in Hz
-    void setFrequency(float rate, float fs) {
-        freq = rate * 4.0f / fs;
-    }
+    void setFrequency(float rate, float fs);
 
     // set the phase offset - phase offset: -1.0 to +1.0
-    void setPhase(float phase) {
-        pa += phase;
-        if(pa > 1.0) pa -= 1.0;
-        else if(pa < -1.0) pa += 1.0;
-    }
+    void setPhase(float phase);
 
     // phase - a phase shift from 0.0 to 1.0
     //   -1.0 = -180 degrees
     //    0.0 = 0 degrees
     //   +1.0 = +180 degrees
-    float getPhaseShiftedOutput(float phase) {
-        float out = pa + (phase * 2.0);
-        if(out < -2.0) out += 4.0;
-        else if(out > 2.0) out -= 4.0;
-        if(out > 0.0) out = out * (2.0 - out);
-        else out = out * (2.0 + out);
-        return out;
-    }
+    float getPhaseShiftedOutput(float phase);
 };
 
 // delay memory with rotating and interpolation
@@ -616,13 +390,15 @@ struct DelayMem {
     // outaddr - the address to read from
     // feeback - AP feedback coeff - + = alternating sign, - = same sign
     // inout - used for input and output
-    virtual void allpass(int inaddr, int outaddr, float feedback, float *inout) { }
+    virtual void allpass(int inaddr, int outaddr,
+        float feedback, float *inout) { }
 
     // inaddr - the address to write to
     // outaddr - the address to read from as a float - real = addr, fract = interp
     // feedback - AP feedback coeff
     // acc - used for input and output
-    virtual void allpassFract(int inaddr, float outaddr, float feedback, float *inout) { }
+    virtual void allpassFract(int inaddr, float outaddr,
+        float feedback, float *inout) { }
 };
 
 // delay memory with rotating and interpolation
@@ -634,93 +410,47 @@ struct DelayMemFloat : DelayMem {
 
     // constructor - pass a pre-allocated buffer and length
     // the length is the number of samples and must be a power of 2
-    DelayMemFloat(float *buf, int len) {
-        delay = buf;
-        dlen = len;
-        dp = 0;
-        preallocated = 1;
-    }
+    DelayMemFloat(float *buf, int len);
 
     // constructor - the min len is rounded up to the next
     // power of 2 and the memory is allocated
-    DelayMemFloat(int minLen) {
-        int i;
-        dlen = 1;
-        while(dlen < minLen) {
-            dlen = dlen << 1;
-        }
-        delay = (float *)malloc(sizeof(float) * dlen);
-        for(i = 0; i < dlen; i ++) {
-            delay[i] = 0.0f;
-        }
-        dp = 0;
-        preallocated = 0;
-    }
+    DelayMemFloat(int minLen);
 
     // destructor
-    ~DelayMemFloat() {
-        if(preallocated == 0) {
-            free(delay);
-        }
-    }
+    ~DelayMemFloat();
 
     // clear the memory
-    void clear(void) override {
-        int i;
-        for(i = 0; i < dlen; i ++) {
-            delay[i] = 0.0f;
-        }
-    }
+    void clear(void) override;
 
     // rotate the memory
-    void rotate(void) override {
-        dp = (dp - 1) & (dlen - 1);
-    }
+    void rotate(void) override;
 
     // read a sample by address no interpolation
     // addr: address to read from
-    float read(int addr) override {
-        return delay[(dp + addr) & (dlen - 1)];
-    }
+    float read(int addr) override;
+
     // read a sample by address interpolated
     // addr - the address to read from as a float - real = addr, fract = interp
-    float readFract(float addr) override {
-        float it1 = addr - (int)addr;
-        float out = delay[(dp + (int)addr) & (dlen - 1)] * (1.0 - it1);
-        out += delay[(dp + ((int)addr + 1)) & (dlen - 1)] * it1;
-        return out;
-    }
+    float readFract(float addr) override;
 
     // write into the delay line
     // addr - the address to write to
     // in - the input var
-    void write(int addr, float in) override {
-        delay[(dp + addr) & (dlen - 1)] = in;
-    }
+    void write(int addr, float in) override;
 
     // inaddr - the address to write to
     // outaddr - the address to read from
     // feeback - AP feedback coeff - + = alternating sign, - = same sign
     // inout - used for input and output
-    void allpass(int inaddr, int outaddr, float feedback, float *inout) override {
-        float it1 = delay[(dp + outaddr) & (dlen - 1)];
-        *inout += it1 * -feedback;
-        delay[(dp + inaddr) & (dlen - 1)] = *inout;
-        *inout = (*inout * feedback) + it1;
-    }
+    void allpass(int inaddr, int outaddr,
+        float feedback, float *inout) override;
 
     // inaddr - the address to write to
     // outaddr - the address to read from as a float - real = addr, fract = interp
     // feedback - AP feedback coeff
     // acc - used for input and output
-    void allpassFract(int inaddr, float outaddr, float feedback, float *inout) override {
-        float it2 = outaddr - (int)outaddr;
-        float it1 = delay[(dp + (int)outaddr) & (dlen - 1)] * (1.0 - it2);
-        it1 += delay[(dp + ((int)outaddr + 1)) & (dlen - 1)] * it2;
-        *inout += (it1 * -feedback);
-        delay[(dp + inaddr) & (dlen - 1)] = *inout;
-        *inout = (*inout * feedback) + it1;
-    }
+    void allpassFract(int inaddr, float outaddr,
+        float feedback, float *inout) override;
 };
 
 // delay memory with rotating and interpolation - 16 bit storage
@@ -729,99 +459,49 @@ struct DelayMem16 : DelayMem {
 
     // constructor - pass a pre-allocated buffer and length
     // the length is the number of samples and must be a power of 2
-    DelayMem16(int16_t *buf, int len) {
-        int i;
-        delay = buf;
-        dlen = len;
-        for(i = 0; i < dlen; i ++) {
-            delay[i] = 0;
-        }
-        dp = 0;
-        preallocated = 1;
-    }
+    DelayMem16(int16_t *buf, int len);
 
     // constructor - the min len is rounded up to the next
     // power of 2 and the memory is allocated
-    DelayMem16(int minLen) {
-        int i;
-        dlen = 1;
-        while(dlen < minLen) {
-            dlen = dlen << 1;
-        }
-        delay = (int16_t *)malloc(sizeof(int16_t) * dlen);
-        for(i = 0; i < dlen; i ++) {
-            delay[i] = 0;
-        }
-        dp = 0;
-        preallocated = 0;
-    }
+    DelayMem16(int minLen);
 
     // destructor
-    ~DelayMem16() {
-        if(preallocated == 0) {
-            free(delay);
-        }
-    }
+    ~DelayMem16();
 
     // clear the memory
-    void clear(void) override {
-        int i;
-        for(i = 0; i < dlen; i ++) {
-            delay[i] = 0;
-        }
-    }
+    void clear(void) override;
 
     // rotate the memory
-    void rotate(void) override {
-        dp = (dp - 1) & (dlen - 1);
-    }
+    void rotate(void) override;
 
     // read a sample by address no interpolation
     // addr: address to read from
     // returns the value in float - range: -1.0f to +1.0f
-    float read(int addr) override {
-        return (float)delay[(dp + addr) & (dlen - 1)] * 0.000030518f;
-    }
+    float read(int addr) override;
+
     // read a sample by address interpolated
     // addr - the address to read from as a float - real = addr, fract = interp
     // returns the value in float - range: -1.0f to +1.0f
-    float readFract(float addr) override {
-        float it1 = addr - (int)addr;
-        float out = ((float)delay[(dp + (int)addr) & (dlen - 1)] * 0.000030518f) * (1.0 - it1);
-        out += ((float)delay[(dp + ((int)addr + 1)) & (dlen - 1)] * 0.000030518f) * it1;
-        return out;
-    }
+    float readFract(float addr) override;
 
     // write into the delay line
     // addr - the address to write to
     // in - the input var as a float - range: -1.0f to +1.0f
-    void write(int addr, float in) override {
-        delay[(dp + addr) & (dlen - 1)] = (int16_t)(in * 32768.0f);
-    }
+    void write(int addr, float in) override;
 
     // inaddr - the address to write to
     // outaddr - the address to read from
     // feeback - AP feedback coeff - + = alternating sign, - = same sign
     // inout - used for input and output
-    void allpass(int inaddr, int outaddr, float feedback, float *inout) override {
-        float it1 = (float)delay[(dp + outaddr) & (dlen - 1)] * 0.000030518f;
-        *inout += it1 * -feedback;
-        delay[(dp + inaddr) & (dlen - 1)] = (int16_t)(*inout * 32768.0f);
-        *inout = (*inout * feedback) + it1;
-    }
+    void allpass(int inaddr, int outaddr,
+        float feedback, float *inout) override;
 
     // inaddr - the address to write to
     // outaddr - the address to read from as a float - real = addr, fract = interp
     // feedback - AP feedback coeff
     // acc - used for input and output
-    void allpassFract(int inaddr, float outaddr, float feedback, float *inout) override {
-        float it2 = outaddr - (int)outaddr;
-        float it1 = ((float)delay[(dp + (int)outaddr) & (dlen - 1)] * 0.000030518f) * (1.0 - it2);
-        it1 += ((float)delay[(dp + ((int)outaddr + 1)) & (dlen - 1)] * 0.000030518f) * it2;
-        *inout += (it1 * -feedback);
-        delay[(dp + inaddr) & (dlen - 1)] = (int16_t)(*inout * 32768.0f);
-        *inout = (*inout * feedback) + it1;
-    }
+    void allpassFract(int inaddr, float outaddr,
+        float feedback, float *inout) override;
 };
 
 // audio bufferer - can be used for input or output
@@ -835,42 +515,30 @@ struct AudioBufferer {
     int bufSizeSamps;
 
     // constructor
-    AudioBufferer(int bufsize, int chans) {
-        int i;
-        buf = (float *)malloc(sizeof(float) * bufsize * chans);
-        for(i = 0; i < bufsize * chans; i ++) {
-            buf[i] = 0.0f;
-        }
-        bufSizeFrames = bufsize;
-        bufSizeSamps = bufsize * chans;
-        bufCount = 0;
-    }
+    AudioBufferer(int bufsize, int chans);
 
     // destructor
-    ~AudioBufferer() {
-        free(buf);
-    }
+    ~AudioBufferer();
 
     // add an input sample - for single write, bulk read
-    void addInSample(float val) {
-        buf[bufCount++] = val;
-    }
+    void addInSample(float val);
 
     // get an output sample - for bulk write, single read
-    float getOutSample(void) {
-        return buf[bufCount++];
-    }
+    float getOutSample(void);
+
+    // get the buffer size in frames
+    int getBufSizeFrames(void);
+
+    // get the buffer size in samples
+    int getBufSizeSamps(void);
 
     // check if the inbuf is full and reset if it is
     // this must be called even if the return value is not needed
     // returns 1 if full, 0 otherwise
-    int isFull(void) {
-        if(bufCount >= bufSizeSamps) {
-            bufCount = 0;
-            return 1;
-        }
-        return 0;
-    }
+    int isFull(void);
+
+    // get a pointer to the buffer
+    float *getBuf(void);
 };
 
 // mono FIR filter
@@ -883,43 +551,13 @@ struct FIRFilter {
     // constructor
     // taps - the number of FIR taps
     // coeffs - an array of coefficients (copied internally)
-    FIRFilter(int taps, float *coeffs) {
-        int i;
-        numtaps = taps;
-        hist = (float *)malloc(sizeof(float) * numtaps);
-        this->coeffs = (float *)malloc(sizeof(float) * numtaps);
-        histpos = 0;
-        for(i = 0; i < numtaps; i ++) {
-            hist[i] = 0.0f;
-            this->coeffs[i] = coeffs[i];
-        }
-    }
+    FIRFilter(int taps, float *coeffs);
 
     // destructor
-    ~FIRFilter() {
-        free(hist);
-        free(coeffs);
-    }
+    ~FIRFilter();
 
     // process a sample and returns next output sample
-    float process(float in) {
-        int i, n;
-        float sum;
-
-        hist[histpos] = in;
-        sum = 0.0;
-        n = 0;
-
-        for(i = histpos; i >= 0; i --) {
-            sum += coeffs[n++] * hist[i];
-        }
-        for(i = numtaps - 1; i > histpos; i --) {
-            sum += coeffs[n++] * hist[i];
-        }
-        histpos ++;
-        if(histpos == numtaps) histpos = 0;
-        return sum;
-    }
+    float process(float in);
 };
 
 // allpass section
@@ -930,29 +568,11 @@ struct AllpassSection {
     float in_t1;
     float a2;
 
-    AllpassSection() {
-        out_t2 = 0.0f;
-        out_t1 = 0.0f;
-        in_t2 = 0.0f;
-        in_t1 = 0.0f;
-        a2 = 0.0f;
-    }
+    AllpassSection();
 
-    void setCoeff(float a) {
-        a2 = a * a;
-    }
+    void setCoeff(float a);
 
-    float process(float in) {
-        float out;
-        // example
-        // out(t) = a^2*(in(t) + out(t-2)) - in(t-2)
-        out = a2 * (in + out_t2) - in_t2;
-        out_t2 = out_t1;
-        out_t1 = out;
-        in_t2 = in_t1;
-        in_t1 = in;
-        return out;
-    }
+    float process(float in);
 };
 
 // mono allpass phase shifter with +90 degree phase shift
@@ -962,40 +582,12 @@ struct AllpassPhaseShifter {
     float pr_del;
 
     // constructor
-    AllpassPhaseShifter() {
-        pr_del = 0.0f;
-
-        pr0.setCoeff(0.48660436861367767358);
-        pr1.setCoeff(0.88077943527246449484);
-        pr2.setCoeff(0.97793125561632343601);
-        pr3.setCoeff(0.99767386185073303473);
-
-        sh0.setCoeff(0.16514909355907719801);
-        sh1.setCoeff(0.73982901254452670958);
-        sh2.setCoeff(0.94794090632917971107);
-        sh3.setCoeff(0.99120971270525837227);
-    }
+    AllpassPhaseShifter();
 
     // process a sample and returns next output sample
     // del = delayed, in phase
     // shift = delayed, +90deg. phase shift (early)
-    void process(float in, float *del, float *shift) {
-        float tempf;
-
-        // phase reference path
-        tempf = pr0.process(in);
-        tempf = pr1.process(tempf);
-        tempf = pr2.process(tempf);
-        tempf = pr3.process(tempf);
-        *del = pr_del;  // 1 sample delay
-        pr_del = tempf;
-
-        // phase shifter +90 path
-        tempf = sh0.process(in);
-        tempf = sh1.process(tempf);
-        tempf = sh2.process(tempf);
-        *shift = sh3.process(tempf);
-    }
+    void process(float in, float *del, float *shift);
 };
 
 // fast sine wave generator based on Z-transform
@@ -1005,25 +597,13 @@ struct FastSineGen {
     float y0, y1, y2, b1;
 
     // constructor
-    FastSineGen() {
-        setFreq(1000.0f, 48000.0f);
-    }
+    FastSineGen();
 
     // set the frequency
-    void setFreq(float freq, float fs) {
-        float w = freq * 2.0f * M_PI / fs;
-        b1 = 2.0f * cosf(w);
-        y1 = sinf(-w);
-        y2 = sinf(-2.0f * w);
-    }
+    void setFreq(float freq, float fs);
 
     // get the next sample
-    float process(void) {
-        y0 = b1 * y1 - y2;
-        y2 = y1;
-        y1 = y0;
-        return y0;
-    }
+    float process(void);
 };
 
 // NCO-style generator with precise frequency steps
@@ -1034,28 +614,18 @@ struct NCOGen {
     uint32_t freq;
 
     // constructor
-    NCOGen() {
-        pa = 0;
-        setFreq(1000.0f, 48000.0f);
-    }
+    NCOGen();
 
     // set the frequency
-    void setFreq(float freq, float fs) {
-        this->freq = (int32_t)((freq / fs) * (float)MAXVAL);
-    }
+    void setFreq(float freq, float fs);
 
     // get the next ramp sample and increment
     // output range is 0.0f to 1.0f
-    float processRamp(void) {
-        pa += freq;
-        return (float)(pa & 0x7fffffff) / (float)MAXVAL;
-    }
+    float processRamp(void);
 
     // get the next sample as a sine and increment
     // output range is -1.0f to 1.0f
-    float processSine(void) {
-        return sinf(processRamp() * M_PI * 2.0f);
-    }
+    float processSine(void);
 };
 
 // Goertzel tone detection
@@ -1070,65 +640,22 @@ struct GoertzelToneDetect {
     float thresh;  // thresh level from 0.0 to 1.0
 
     // constructor
-    GoertzelToneDetect() {
-        setFreq(1000.0f, 0.025f, 48000.0f);
-        setThresh(0.25f);
-    }
+    GoertzelToneDetect();
 
     // set frequency
-    void setFreq(float freq, float blockTime, float fs) {
-        n = (int)(fs * blockTime);
-        int k = (int)(0.5f + (((float)n * freq) / fs));
-        float omega = (2.0f * M_PI * k) / (float)n;
-        sine = sinf(omega);
-        cosine = cosf(omega);
-        coeff = 2.0f * cosine;
-        q1 = 0.0f;
-        q2 = 0.0f;
-        sampCount = 0;
-        detect = 0;
-    }
+    void setFreq(float freq, float blockTime, float fs);
 
     // set the detection threshold
-    void setThresh(float thresh) {
-        this->thresh = thresh;
-    }
+    void setThresh(float thresh);
 
     // process a sample and return 1 if tone is detected
-    int process(float sample) {
-        float q0;
-        q0 = coeff * q1 - q2 + sample;
-        q2 = q1;
-        q1 = q0;
-
-        sampCount ++;
-        if(sampCount == n) {
-            float real = (q1 - q2 * cosine);
-            float imag = q2 * sine;
-            detectLevel = (real * real + imag * imag) / ((float)n * (float)n);
-            detectLevel = clampPos(detectLevel * 4.0);  // XXX amplitude fix?
-            if(detectLevel > thresh) {
-                detect = 1;
-            }
-            else {
-                detect = 0;
-            }
-            q1 = 0.0f;
-            q2 = 0.0f;
-            sampCount = 0;
-        }
-        return detect;
-    }
+    int process(float sample);
 
     // get detection state
-    int getDetect(void) {
-        return detect;
-    }
+    int getDetect(void);
 
     // get the detection magnitude
-    float getDetectLevel(void) {
-        return detectLevel;
-    }
+    float getDetectLevel(void);
 };
 
 };  // namespace dsp2

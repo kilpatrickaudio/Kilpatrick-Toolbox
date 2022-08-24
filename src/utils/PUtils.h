@@ -195,6 +195,29 @@ std::string freqToStr(float freq);
 // possibly truncate the prefix of a string to make it maxlen
 std::string truncateStrPrefix(std::string str, int maxlen);
 
+// possibly truncate the suffix of a string to make it maxlen
+std::string truncateStrSuffix(std::string str, int maxlen);
+
+// convert a channel count to a string
+// return format:
+//  - <1 = "n/a"
+//  - 1 = "MONO"
+//  - 2 = "STEREO"
+//  - 3-n = "nCH"
+std::string channelCountToStr(int channels);
+
+// convert an audio samplerate to a string
+// detects common rates
+std::string samplerateToStr(int samplerate);
+
+// format a time position used for a recording playback display
+// posFrames - the current position in the playback
+// lenFrames - the total recording length in frames
+// samplerate - the recording samplerate
+// returns a string formatted like: "0:00:00 / 0:04:33"
+std::string playbackTimeStr(int posFrames,
+    int lenFrames, int samplerate);
+
 // format a string the right way
 inline std::string format(std::string format, ...) {
     va_list args;

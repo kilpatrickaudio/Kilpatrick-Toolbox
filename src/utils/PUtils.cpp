@@ -96,4 +96,85 @@ std::string truncateStrPrefix(std::string str, int maxlen) {
     return str;
 }
 
+// possibly truncate the suffix of a string to make it maxlen
+std::string truncateStrSuffix(std::string str, int maxlen) {
+    if(str.length() > (unsigned int)maxlen) {
+        return str.substr(0, maxlen);
+    }
+    return str;
+}
+
+// convert a channel count to a string
+// return format:
+//  - <1 = "n/a"
+//  - 1 = "MONO"
+//  - 2 = "STEREO"
+//  - 3-n = "nCH"
+std::string channelCountToStr(int channels) {
+    if(channels < 1) {
+        return "n/a";
+    }
+    switch(channels) {
+        case 1:
+            return "MONO";
+        case 2:
+            return "STEREO";
+    }
+    return format("%dCH", channels);
+}
+
+// convert an audio samplerate to a string
+// detects common rates
+std::string samplerateToStr(int samplerate) {
+    switch(samplerate) {
+        case 8000:
+            return "8K";
+        case 11025:
+            return "11.025K";
+        case 22050:
+            return "22.050K";
+        case 32000:
+            return "32K";
+        case 44100:
+            return "44.1K";
+        case 48000:
+            return "48K";
+        case 88200:
+            return "88.2K";
+        case 96000:
+            return "96K";
+        case 176400:
+            return "176.4K";
+        case 192000:
+            return "192K";
+    }
+    return format("%.3fK", ((float)samplerate / 1000.0f));
+}
+
+// format a time position used for a recording playback display
+// posFrames - the current position in the playback
+// lenFrames - the total recording length in frames
+// samplerate - the recording samplerate
+// returns a string formatted like: "0:00:00 / 0:04:33"
+std::string playbackTimeStr(int posFrames,
+        int lenFrames, int samplerate) {
+    int pHour, pMin, pSec;
+    int lHour, lMin, lSec;
+
+    pSec = posFrames / samplerate;
+    pMin = pSec / 60;
+    pHour = pMin / 60;
+    pSec = pSec % 60;
+    pMin = pMin % 60;
+
+    lSec = lenFrames / samplerate;
+    lMin = lSec / 60;
+    lHour = lMin / 60;
+    lSec = lSec % 60;
+    lMin = lMin % 60;
+
+    return format("%01d:%02d:%02d / %01d:%02d:%02d",
+        pHour, pMin, pSec, lHour, lMin, lSec);
+}
+
 };
