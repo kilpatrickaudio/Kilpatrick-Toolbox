@@ -392,10 +392,10 @@ struct KilpatrickSlidePot : app::SvgSlider {
     // set the travel and position all the components
     void setTravel(float travel) {
         travel = mm2px(travel);
-        math::Vec margin = math::Vec(handle->box.size).mult(0.5);
-        float handleX = -margin.x + (background->box.size.x * 0.5);
+        math::Vec margin = math::Vec(handle->box.size).mult(0.5f);
+        float handleX = -margin.x + (background->box.size.x * 0.5f);
         float handleY = margin.y;
-        float trackOffset = (background->box.size.y - travel) * 0.5;
+        float trackOffset = (background->box.size.y - travel) * 0.5f;
         maxHandlePos = math::Vec(handleX, trackOffset - handleY);
         minHandlePos = math::Vec(handleX, trackOffset - handleY + travel);
     }
@@ -482,7 +482,7 @@ struct KilpatrickLabel : widget::TransparentWidget {
         vAlign = NVG_ALIGN_MIDDLE;
         fgColor = nvgRGB(0xe0, 0xe0, 0xe0);
         bgColor = nvgRGB(0x30, 0x40, 0x90);
-        box.pos = pos.minus(size.mult(2));
+        box.pos = pos.minus(size.mult(0.5f));
         box.size = size;
     }
 
@@ -545,7 +545,7 @@ struct KilpatrickFramebufferRGB888 : widget::TransparentWidget {
     // create a new framebuffer
     KilpatrickFramebufferRGB888(int id, math::Vec pos, math::Vec size, int w, int h) {
         bgColor = nvgRGB(0x30, 0x40, 0x90);
-        box.pos = pos.minus(size.mult(2));
+        box.pos = pos.minus(size.mult(0.5f));
         box.size = size;
         this->fbW = w;
         this->fbH = h;
@@ -640,7 +640,7 @@ struct KilpatrickFramebufferRGB565 : widget::TransparentWidget, BGfxScreen {
     // create a new framebuffer
     KilpatrickFramebufferRGB565(int id, math::Vec pos, math::Vec size, int w, int h) {
         bgColor = nvgRGB(0x30, 0x40, 0x90);
-        box.pos = pos.minus(size.mult(2));
+        box.pos = pos.minus(size.mult(0.5f));
         box.size = size;
         this->fbW = w;
         this->fbH = h;
@@ -898,7 +898,7 @@ struct KilpatrickJoystick : widget::OpaqueWidget {
         this->id = id;
         bgColor = nvgRGBA(0x33, 0x33, 0x90, 0xff);
         knobColor = nvgRGBA(0xff, 0x00, 0x00, 0xff);
-        box.pos = pos.minus(size.mult(2));
+        box.pos = pos.minus(size.mult(0.5f));
         box.size = size;
         moveScale = 1.0 / box.size.x;
     }

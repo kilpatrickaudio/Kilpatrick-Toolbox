@@ -80,6 +80,22 @@ struct TouchZones {
         }
         return -1;
     }
+
+    // convert a touch to a position within the zone
+    // if a zone is offset from the corner of the box
+    // this will return 0.0, 0.0 at the top-left corner
+    // of the zone and 1.0, 1.0 and the bottom right corner
+    // returns -1 on not in a touch
+    int getTouchPos(math::Vec pos, float *x, float *y) {
+        int zn = findTouch(pos.x, pos.y);
+        if(zn < 0) {
+            return -1;
+        }
+        TouchZone zone = zones[zn];
+        *x = (pos.x - zone.rect.pos.x) / zone.rect.size.x;
+        *y = (pos.y - zone.rect.pos.y) / zone.rect.size.y;
+        return 0;
+    }
 };
 
 // check of an object is an instance of
