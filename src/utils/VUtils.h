@@ -33,6 +33,101 @@ inline void rgbToLed(std::vector<Light> *lights, int base, uint32_t val) {
     (*lights)[base+2].setBrightness((float)(val & 0xff) * 0.003921569);
 }
 
+// convert HSV to RGB color
+inline void hsv2rgb(float h, float s, float v, float *r, float *g, float *b) {
+    float hh, p, q, t, ff;
+    int i;
+    if(h < 0.0f) h = 0.0f;
+    else if(h > 1.0f) h = 1.0f;
+    hh = h * 5.99999;
+    i = (int)hh;
+    ff = hh - i;
+    p = v * (1.0 - s);
+    q = v * (1.0 - (s * ff));
+    t = v * (1.0 - (s * (1.0 - ff)));
+    switch(i) {
+        case 0:
+            *r = v;
+            *g = t;
+            *b = p;
+            break;
+        case 1:
+            *r = q;
+            *g = v;
+            *b = p;
+            break;
+        case 2:
+            *r = p;
+            *g = v;
+            *b = t;
+            break;
+        case 3:
+            *r = p;
+            *g = q;
+            *b = v;
+            break;
+        case 4:
+            *r = t;
+            *g = p;
+            *b = v;
+            break;
+        case 5:
+        default:
+            *r = v;
+            *g = p;
+            *b = q;
+            break;
+    }
+}
+
+// convert RGB to HSV color
+inline void rgb2hsv(float r, float g, float b, float *h, float *s, float *v) {
+    float min, max, delta;
+    min = r;
+    if(g < min) {
+        min = g;
+    }
+    if(b < min) {
+        min = b;
+    }
+    max = r;
+    if(g > max) {
+        max = g;
+    }
+    if(b > max) {
+        max = b;
+    }
+
+    *v = max;  // v
+    delta = max - min;
+    if(delta < 0.00001) {
+        *s = 0;
+        *h = 0;
+        return;
+    }
+    if(max > 0.0) {
+        *s = delta / max;  // s
+    }
+    else {
+        *s = 0.0;  // s
+        *h = 0.0;  // actually NAN but we won't do it like that
+        return;
+    }
+    if(r == max) {
+        *h = (g - b) / delta;  // yellow to magenta
+    }
+    else if(g == max) {
+        *h = 2.0 + ((b - r) / delta);  // cyan to yellow
+    }
+    else {
+        *h = 4.0 + ((r - g) / delta);  // magenta and cyan
+    }
+    *h /= 6.0;
+    if(*h < 0.0) {
+        *h += 1.0;
+    }
+}
+
 // a zone to keep track of
 struct TouchZone {
     Rect rect;

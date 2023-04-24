@@ -209,6 +209,13 @@ struct KilpatrickD6RGreyButton : KilpatrickButton {
 };
 
 // momentary pushbutton
+struct KilpatrickD6RBlackButton : KilpatrickButton {
+    KilpatrickD6RBlackButton() : KilpatrickButton(asset::plugin(pluginInstance, "res/components/button-D6R-black-released.svg"),
+        asset::plugin(pluginInstance, "res/components/button-D6R-black-pressed.svg")) {
+    }
+};
+
+// momentary pushbutton
 struct KilpatrickD6RWhiteButton : KilpatrickButton {
     KilpatrickD6RWhiteButton() : KilpatrickButton(asset::plugin(pluginInstance, "res/components/button-D6R-white-released.svg"),
         asset::plugin(pluginInstance, "res/components/button-D6R-white-pressed.svg")) {

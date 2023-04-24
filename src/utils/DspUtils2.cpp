@@ -241,6 +241,7 @@ void Levelmeter::update(float val) {
 
 // call this if the samplerate changes
 void Levelmeter::onSampleRateChange(void) {
+    // XXX fix
     hpf.setCutoff(dsp2::Filter2Pole::TYPE_HPF, 10.0f, 0.707f, 1.0f, APP->engine->getSampleRate());
     setSmoothingFreq(smoothingSetting, APP->engine->getSampleRate());
     setPeakHoldTime(peakTimeoutSetting, APP->engine->getSampleRate());
@@ -293,7 +294,8 @@ float Levelmeter::getPeakDbLevel(void) {
 //
 // constructor
 LevelLed::LevelLed() {
-    meter.setSmoothingFreq(10.f, APP->engine->getSampleRate());
+    // XXX fix
+//    meter.setSmoothingFreq(10.f, APP->engine->getSampleRate());
 }
 
 // call this if the samplerate changes

@@ -173,11 +173,10 @@ struct Stereo_MeterDisplay : widget::TransparentWidget {
 
         meterL.setLevels(levelL, peakL);
         meterL.setRefLevel(refL);
+        meterL.draw(args);
 
         meterR.setLevels(levelR, peakR);
         meterR.setRefLevel(refR);
-
-        meterL.draw(args);
         meterR.draw(args);
     }
 

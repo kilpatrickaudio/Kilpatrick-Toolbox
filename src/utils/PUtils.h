@@ -10,9 +10,11 @@
 #ifndef PUTILS_H
 #define PUTILS_H
 
-#include "../plugin.hpp"
+//#include "../plugin.hpp"
 #include <string>
 #include <vector>
+#include <stdarg.h>
+#include <math.h>
 
 namespace putils {
 
